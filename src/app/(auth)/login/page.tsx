@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import Link from 'next/link';
-import { DollarSign } from 'lucide-react';
+import { IndianRupee } from 'lucide-react';
 
 export default function LoginPage() {
     const [email, setEmail] = useState('');
@@ -36,7 +36,7 @@ export default function LoginPage() {
         <div>
             <div className="text-center mb-6">
                 <div className="mx-auto h-12 w-12 bg-blue-100 rounded-full flex items-center justify-center">
-                    <DollarSign className="h-8 w-8 text-blue-600" />
+                    <IndianRupee className="h-8 w-8 text-blue-600" />
                 </div>
                 <h2 className="mt-3 text-3xl font-extrabold text-gray-900">Personal Finance Tracker</h2>
                 <p className="mt-2 text-sm text-gray-600">Sign in to your account</p>

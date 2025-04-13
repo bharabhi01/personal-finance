@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { LayoutDashboard, DollarSign, LineChart, LogOut, PiggyBank, CreditCard } from 'lucide-react';
+import { LayoutDashboard, IndianRupee, LineChart, LogOut, PiggyBank, CreditCard } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const navItems = [
@@ -15,7 +15,7 @@ const navItems = [
     {
         label: 'Transactions',
         href: '/transactions',
-        icon: DollarSign,
+        icon: IndianRupee,
     },
     {
         label: 'Expenses',

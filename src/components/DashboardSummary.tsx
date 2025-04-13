@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { getTransactions } from '@/lib/database';
 import { formatCurrency, calculateSavings } from '@/lib/utils';
-import { ArrowUpRight, ArrowDownRight, DollarSign, PiggyBank } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, IndianRupee, PiggyBank } from 'lucide-react';
 
 interface Summary {
     income: number;
@@ -139,7 +139,7 @@ export default function DashboardSummary() {
                             <p className="text-2xl font-semibold text-purple-600">{formatCurrency(summary.investments)}</p>
                         </div>
                         <div className="rounded-full p-2 bg-purple-100">
-                            <DollarSign className="h-5 w-5 text-purple-600" />
+                            <IndianRupee className="h-5 w-5 text-purple-600" />
                         </div>
                     </div>
                 </div>

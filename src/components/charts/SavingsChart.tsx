@@ -165,7 +165,7 @@ export default function SavingsChart() {
             y: {
                 ticks: {
                     callback: function (value) {
-                        return '$' + value;
+                        return '₹' + value;
                     }
                 }
             }
