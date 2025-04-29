@@ -10,11 +10,22 @@ import { TransactionType } from '@/types';
 
 const transactionSchema = z.object({
     amount: z.coerce.number().positive('Amount must be positive'),
-    source: z.string().min(1, 'Source is required'),
+    source: z.string().optional(),
+    investment_name: z.string().optional(),
     tags: z.string().optional(),
     date: z.string().min(1, 'Date is required'),
     type: z.enum(['expense', 'income', 'investment']),
-    investment_name: z.string().optional(),
+}).refine(data => {
+    if (data.type !== 'investment' && !data.source) {
+        return false;
+    }
+    if (data.type === 'investment' && !data.investment_name) {
+        return false;
+    }
+    return true;
+}, {
+    message: "Source is required for expense/income, Investment Name is required for investments",
+    path: ['source']
 });
 
 type TransactionFormValues = z.infer<typeof transactionSchema>;
@@ -54,11 +65,11 @@ export default function TransactionForm() {
             const transaction = {
                 user_id: user.id,
                 amount: data.amount,
-                source: data.type === 'investment' ? data.investment_name || 'Investment' : data.source,
-                tags,
                 date: data.date,
                 type: data.type,
-                ...(data.type === 'investment' && { investment_name: data.investment_name }),
+                tags,
+                source: data.type !== 'investment' ? (data.source || '') : '',
+                ...(data.type === 'investment' && { investment_name: data.investment_name || '' })
             };
 
             await addTransaction(transaction);
