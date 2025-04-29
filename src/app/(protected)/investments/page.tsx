@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import TransactionForm from '@/components/TransactionForm';
 import TransactionList from '@/components/TransactionList';
 
 export default function InvestmentsPage() {
@@ -17,8 +16,6 @@ export default function InvestmentsPage() {
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold">Investments</h1>
             </div>
-
-            <TransactionForm />
 
             <div className="mt-6">
                 <h2 className="text-xl font-semibold mb-4">Investment History</h2>

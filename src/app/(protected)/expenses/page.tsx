@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import TransactionForm from '@/components/TransactionForm';
 import TransactionList from '@/components/TransactionList';
 import ExpensesChart from '@/components/charts/ExpensesChart';
 
@@ -22,8 +21,6 @@ export default function ExpensesPage() {
             <div className="mb-6">
                 <ExpensesChart key={`expenses-chart-${refreshKey}`} />
             </div>
-
-            <TransactionForm />
 
             <div className="mt-6">
                 <h2 className="text-xl font-semibold mb-4">Expense History</h2>

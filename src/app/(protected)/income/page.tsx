@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import TransactionForm from '@/components/TransactionForm';
 import TransactionList from '@/components/TransactionList';
 import IncomeChart from '@/components/charts/IncomeChart';
 
@@ -22,8 +21,6 @@ export default function IncomePage() {
             <div className="mb-6">
                 <IncomeChart key={`income-chart-${refreshKey}`} />
             </div>
-
-            <TransactionForm />
 
             <div className="mt-6">
                 <h2 className="text-xl font-semibold mb-4">Income History</h2>
