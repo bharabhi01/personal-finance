@@ -3,10 +3,12 @@
 import { useState } from 'react';
 import TransactionList from '@/components/TransactionList';
 import SearchBar from '@/components/SearchBar';
+import TagFilter from '@/components/TagFilter';
 
 export default function InvestmentsPage() {
     const [refreshKey, setRefreshKey] = useState(0);
     const [searchQuery, setSearchQuery] = useState('');
+    const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
     // Get current month's date range
     const currentMonthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
@@ -30,6 +32,15 @@ export default function InvestmentsPage() {
                         <SearchBar onSearch={setSearchQuery} placeholder="Search investments..." />
                     </div>
                 </div>
+
+                <div className="mb-4">
+                    <TagFilter
+                        onTagsChange={setSelectedTags}
+                        transactionType="investment"
+                        key={`tag-filter-${refreshKey}`}
+                    />
+                </div>
+
                 <TransactionList
                     key={`investments-list-${refreshKey}`}
                     type="investment"
@@ -37,6 +48,7 @@ export default function InvestmentsPage() {
                     endDate={today}
                     onUpdateList={refreshData}
                     searchQuery={searchQuery}
+                    tagFilters={selectedTags}
                 />
             </div>
         </div>

@@ -4,10 +4,12 @@ import { useState } from 'react';
 import TransactionForm from '@/components/TransactionForm';
 import TransactionList from '@/components/TransactionList';
 import SearchBar from '@/components/SearchBar';
+import TagFilter from '@/components/TagFilter';
 
 export default function TransactionsPage() {
     const [refreshKey, setRefreshKey] = useState(0);
     const [searchQuery, setSearchQuery] = useState('');
+    const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
     // Get current month's date range
     const currentMonthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
@@ -33,12 +35,21 @@ export default function TransactionsPage() {
                         <SearchBar onSearch={setSearchQuery} />
                     </div>
                 </div>
+
+                <div className="mb-4">
+                    <TagFilter
+                        onTagsChange={setSelectedTags}
+                        key={`tag-filter-${refreshKey}`}
+                    />
+                </div>
+
                 <TransactionList
                     key={`transactions-${refreshKey}`}
                     startDate={currentMonthStart}
                     endDate={today}
                     onUpdateList={refreshTransactions}
                     searchQuery={searchQuery}
+                    tagFilters={selectedTags}
                 />
             </div>
         </div>

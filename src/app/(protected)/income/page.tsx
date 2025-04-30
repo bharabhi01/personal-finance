@@ -4,10 +4,12 @@ import { useState } from 'react';
 import TransactionList from '@/components/TransactionList';
 import IncomeChart from '@/components/charts/IncomeChart';
 import SearchBar from '@/components/SearchBar';
+import TagFilter from '@/components/TagFilter';
 
 export default function IncomePage() {
     const [refreshKey, setRefreshKey] = useState(0);
     const [searchQuery, setSearchQuery] = useState('');
+    const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
     // Get current month's date range
     const currentMonthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
@@ -35,6 +37,15 @@ export default function IncomePage() {
                         <SearchBar onSearch={setSearchQuery} placeholder="Search income sources..." />
                     </div>
                 </div>
+
+                <div className="mb-4">
+                    <TagFilter
+                        onTagsChange={setSelectedTags}
+                        transactionType="income"
+                        key={`tag-filter-${refreshKey}`}
+                    />
+                </div>
+
                 <TransactionList
                     key={`income-list-${refreshKey}`}
                     type="income"
@@ -42,6 +53,7 @@ export default function IncomePage() {
                     endDate={today}
                     onUpdateList={refreshData}
                     searchQuery={searchQuery}
+                    tagFilters={selectedTags}
                 />
             </div>
         </div>

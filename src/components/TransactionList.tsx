@@ -15,6 +15,7 @@ interface TransactionListProps {
     endDate?: string;
     onUpdateList?: () => void;
     searchQuery?: string;
+    tagFilters?: string[];
 }
 
 export default function TransactionList({
@@ -23,7 +24,8 @@ export default function TransactionList({
     startDate,
     endDate,
     onUpdateList,
-    searchQuery = ''
+    searchQuery = '',
+    tagFilters = []
 }: TransactionListProps) {
     const { user } = useAuth();
     const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -60,6 +62,11 @@ export default function TransactionList({
 
         fetchTransactions();
     }, [user, type, startDate, endDate, onUpdateList]);
+
+    // Reset to first page when filters change
+    useEffect(() => {
+        setCurrentPage(1);
+    }, [searchQuery, tagFilters]);
 
     const handleDelete = async (id: string) => {
         if (!user) return;
@@ -103,18 +110,24 @@ export default function TransactionList({
         }
     };
 
-    // Filter transactions based on search query
+    // Filter transactions based on search query and tags
     const filteredTransactions = useMemo(() => {
-        if (!searchQuery) return allTransactions;
-
         return allTransactions.filter(transaction => {
+            // Source filter
             const source = transaction.type === 'investment'
                 ? (transaction as any).investment_name || transaction.source
                 : transaction.source;
 
-            return source.toLowerCase().includes(searchQuery.toLowerCase());
+            const matchesSearch = !searchQuery ||
+                source.toLowerCase().includes(searchQuery.toLowerCase());
+
+            // Tag filter
+            const matchesTags = tagFilters.length === 0 ||
+                tagFilters.some(tag => transaction.tags.includes(tag));
+
+            return matchesSearch && matchesTags;
         });
-    }, [allTransactions, searchQuery]);
+    }, [allTransactions, searchQuery, tagFilters]);
 
     // Calculate pagination
     const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
@@ -149,7 +162,9 @@ export default function TransactionList({
         return (
             <div className="text-center py-6 bg-gray-50 rounded-lg">
                 <p className="text-gray-500">
-                    {searchQuery ? `No transactions found matching "${searchQuery}"` : "No transactions found."}
+                    {searchQuery || tagFilters.length > 0
+                        ? "No transactions found matching your filters."
+                        : "No transactions found."}
                 </p>
             </div>
         );
@@ -207,7 +222,10 @@ export default function TransactionList({
                                         {transaction.tags.map((tag, index) => (
                                             <span
                                                 key={index}
-                                                className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800"
+                                                className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium 
+                                                    ${tagFilters.includes(tag)
+                                                        ? 'bg-blue-500 text-white'
+                                                        : 'bg-blue-100 text-blue-800'}`}
                                             >
                                                 {tag}
                                             </span>

@@ -4,10 +4,12 @@ import { useState } from 'react';
 import TransactionList from '@/components/TransactionList';
 import ExpensesChart from '@/components/charts/ExpensesChart';
 import SearchBar from '@/components/SearchBar';
+import TagFilter from '@/components/TagFilter';
 
 export default function ExpensesPage() {
     const [refreshKey, setRefreshKey] = useState(0);
     const [searchQuery, setSearchQuery] = useState('');
+    const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
     // Get current month's date range
     const currentMonthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
@@ -35,6 +37,15 @@ export default function ExpensesPage() {
                         <SearchBar onSearch={setSearchQuery} placeholder="Search expenses..." />
                     </div>
                 </div>
+
+                <div className="mb-4">
+                    <TagFilter
+                        onTagsChange={setSelectedTags}
+                        transactionType="expense"
+                        key={`tag-filter-${refreshKey}`}
+                    />
+                </div>
+
                 <TransactionList
                     key={`expenses-list-${refreshKey}`}
                     type="expense"
@@ -42,6 +53,7 @@ export default function ExpensesPage() {
                     endDate={today}
                     onUpdateList={refreshData}
                     searchQuery={searchQuery}
+                    tagFilters={selectedTags}
                 />
             </div>
         </div>
