@@ -7,12 +7,12 @@ import { z } from 'zod';
 import { X } from 'lucide-react';
 import { Transaction, TransactionType } from '@/types';
 import { updateTransaction } from '@/lib/database';
+import TagSelector from './TagSelector';
 
 const transactionSchema = z.object({
     amount: z.coerce.number().positive('Amount must be positive'),
     source: z.string().optional(),
     investment_name: z.string().optional(),
-    tags: z.string().optional(),
     date: z.string().min(1, 'Date is required'),
     type: z.enum(['expense', 'income', 'investment']),
 }).refine(data => {
@@ -45,6 +45,7 @@ export default function TransactionEditModal({
 }: TransactionEditModalProps) {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [selectedTags, setSelectedTags] = useState<string[]>(transaction.tags || []);
 
     const {
         register,
@@ -61,7 +62,6 @@ export default function TransactionEditModal({
             source: transaction.source || '',
             investment_name: (transaction as any).investment_name || '',
             date: transaction.date,
-            tags: transaction.tags.join(', ')
         }
     });
 
@@ -76,8 +76,8 @@ export default function TransactionEditModal({
                 source: transaction.source || '',
                 investment_name: (transaction as any).investment_name || '',
                 date: transaction.date,
-                tags: transaction.tags.join(', ')
             });
+            setSelectedTags(transaction.tags || []);
         }
     }, [transaction, isOpen, reset]);
 
@@ -86,13 +86,11 @@ export default function TransactionEditModal({
             setIsSubmitting(true);
             setError(null);
 
-            const tags = data.tags ? data.tags.split(',').map(tag => tag.trim()) : [];
-
             const updatedTransaction = {
                 amount: data.amount,
                 date: data.date,
                 type: data.type as TransactionType,
-                tags,
+                tags: selectedTags,
                 ...(data.type !== 'investment' ? { source: data.source || '' } : {}),
                 ...(data.type === 'investment' ? { investment_name: data.investment_name || '', source: '' } : {})
             };
@@ -227,13 +225,12 @@ export default function TransactionEditModal({
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                                    Tags (comma separated)
+                                    Tags
                                 </label>
-                                <input
-                                    type="text"
-                                    {...register('tags')}
-                                    className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                                    placeholder="e.g., food, utilities, essentials"
+                                <TagSelector
+                                    value={selectedTags}
+                                    onChange={setSelectedTags}
+                                    placeholder="Select or add tags..."
                                 />
                             </div>
                         </div>

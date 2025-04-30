@@ -1,18 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import { useForm } from 'react-hook-form';
+import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuth } from '@/context/AuthContext';
 import { addTransaction } from '@/lib/database';
 import { TransactionType } from '@/types';
+import TagSelector from './TagSelector';
 
 const transactionSchema = z.object({
     amount: z.coerce.number().positive('Amount must be positive'),
     source: z.string().optional(),
     investment_name: z.string().optional(),
-    tags: z.string().optional(),
     date: z.string().min(1, 'Date is required'),
     type: z.enum(['expense', 'income', 'investment']),
 }).refine(data => {
@@ -40,6 +40,7 @@ export default function TransactionForm({ onTransactionAdded }: TransactionFormP
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState(false);
     const [transactionType, setTransactionType] = useState<TransactionType>('expense');
+    const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
     const {
         register,
@@ -47,6 +48,7 @@ export default function TransactionForm({ onTransactionAdded }: TransactionFormP
         reset,
         formState: { errors },
         watch,
+        control,
     } = useForm<TransactionFormValues>({
         resolver: zodResolver(transactionSchema),
         defaultValues: {
@@ -64,14 +66,12 @@ export default function TransactionForm({ onTransactionAdded }: TransactionFormP
             setIsSubmitting(true);
             setError(null);
 
-            const tags = data.tags ? data.tags.split(',').map(tag => tag.trim()) : [];
-
             const transaction = {
                 user_id: user.id,
                 amount: data.amount,
                 date: data.date,
                 type: data.type,
-                tags,
+                tags: selectedTags,
                 source: data.type !== 'investment' ? (data.source || '') : '',
                 ...(data.type === 'investment' && { investment_name: data.investment_name || '' })
             };
@@ -80,6 +80,7 @@ export default function TransactionForm({ onTransactionAdded }: TransactionFormP
 
             setSuccess(true);
             reset();
+            setSelectedTags([]);
 
             // Call the refresh function if provided
             if (onTransactionAdded) {
@@ -96,6 +97,11 @@ export default function TransactionForm({ onTransactionAdded }: TransactionFormP
         } finally {
             setIsSubmitting(false);
         }
+    };
+
+    const handleReset = () => {
+        reset();
+        setSelectedTags([]);
     };
 
     return (
@@ -211,13 +217,12 @@ export default function TransactionForm({ onTransactionAdded }: TransactionFormP
 
                     <div className="md:col-span-2">
                         <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Tags (comma separated)
+                            Tags
                         </label>
-                        <input
-                            type="text"
-                            {...register('tags')}
-                            className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                            placeholder="e.g., food, utilities, essentials"
+                        <TagSelector
+                            value={selectedTags}
+                            onChange={setSelectedTags}
+                            placeholder="Select or add tags..."
                         />
                     </div>
                 </div>
@@ -225,7 +230,7 @@ export default function TransactionForm({ onTransactionAdded }: TransactionFormP
                 <div className="flex justify-end">
                     <button
                         type="button"
-                        onClick={() => reset()}
+                        onClick={handleReset}
                         className="mr-2 bg-gray-100 py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                     >
                         Reset
