@@ -9,6 +9,10 @@ export default function ExpensesPage() {
     const [refreshKey, setRefreshKey] = useState(0);
     const [searchQuery, setSearchQuery] = useState('');
 
+    // Get current month's date range
+    const currentMonthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
+    const today = new Date().toISOString().split('T')[0];
+
     // Function to refresh the data
     const refreshData = () => {
         setRefreshKey(prev => prev + 1);
@@ -34,7 +38,8 @@ export default function ExpensesPage() {
                 <TransactionList
                     key={`expenses-list-${refreshKey}`}
                     type="expense"
-                    limit={50}
+                    startDate={currentMonthStart}
+                    endDate={today}
                     onUpdateList={refreshData}
                     searchQuery={searchQuery}
                 />

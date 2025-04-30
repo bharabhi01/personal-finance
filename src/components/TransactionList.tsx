@@ -5,7 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { getTransactions, deleteTransaction } from '@/lib/database';
 import { Transaction, TransactionType } from '@/types';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import { Trash2 } from 'lucide-react';
+import { Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface TransactionListProps {
     type?: TransactionType;
@@ -28,6 +28,9 @@ export default function TransactionList({
     const [transactions, setTransactions] = useState<Transaction[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [itemsPerPage, setItemsPerPage] = useState(limit);
+    const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
 
     useEffect(() => {
         if (!user) return;
@@ -35,8 +38,14 @@ export default function TransactionList({
         const fetchTransactions = async () => {
             try {
                 setLoading(true);
-                const data = await getTransactions(user.id, type, startDate, endDate);
-                setTransactions(data.slice(0, limit));
+                // Get the first day of the current month if no start date is provided
+                const currentStartDate = startDate || new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
+                // Get today's date if no end date is provided
+                const currentEndDate = endDate || new Date().toISOString().split('T')[0];
+
+                const data = await getTransactions(user.id, type, currentStartDate, currentEndDate);
+                setAllTransactions(data);
+                setTransactions(data);
                 setError(null);
             } catch (err) {
                 console.error('Error fetching transactions:', err);
@@ -47,7 +56,7 @@ export default function TransactionList({
         };
 
         fetchTransactions();
-    }, [user, type, limit, startDate, endDate, onUpdateList]);
+    }, [user, type, startDate, endDate, onUpdateList]);
 
     const handleDelete = async (id: string) => {
         if (!user) return;
@@ -55,6 +64,7 @@ export default function TransactionList({
 
         try {
             await deleteTransaction(id);
+            setAllTransactions(allTransactions.filter(transaction => transaction.id !== id));
             setTransactions(transactions.filter(transaction => transaction.id !== id));
             if (onUpdateList) onUpdateList();
         } catch (err) {
@@ -78,16 +88,37 @@ export default function TransactionList({
 
     // Filter transactions based on search query
     const filteredTransactions = useMemo(() => {
-        if (!searchQuery) return transactions;
+        if (!searchQuery) return allTransactions;
 
-        return transactions.filter(transaction => {
+        return allTransactions.filter(transaction => {
             const source = transaction.type === 'investment'
                 ? (transaction as any).investment_name || transaction.source
                 : transaction.source;
 
             return source.toLowerCase().includes(searchQuery.toLowerCase());
         });
-    }, [transactions, searchQuery]);
+    }, [allTransactions, searchQuery]);
+
+    // Calculate pagination
+    const totalPages = Math.ceil(filteredTransactions.length / itemsPerPage);
+
+    // Get current page items
+    const currentTransactions = useMemo(() => {
+        const indexOfLastItem = currentPage * itemsPerPage;
+        const indexOfFirstItem = indexOfLastItem - itemsPerPage;
+        return filteredTransactions.slice(indexOfFirstItem, indexOfLastItem);
+    }, [filteredTransactions, currentPage, itemsPerPage]);
+
+    // Handle page change
+    const handlePageChange = (page: number) => {
+        setCurrentPage(page);
+    };
+
+    // Handle items per page change
+    const handleItemsPerPageChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        setItemsPerPage(Number(e.target.value));
+        setCurrentPage(1); // Reset to first page when changing items per page
+    };
 
     if (loading) {
         return <div className="text-center py-4">Loading transactions...</div>;
@@ -108,75 +139,116 @@ export default function TransactionList({
     }
 
     return (
-        <div className="overflow-x-auto">
-            <table className="min-w-full bg-white divide-y divide-gray-200 rounded-lg overflow-hidden">
-                <thead className="bg-gray-50">
-                    <tr>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Date
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Type
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Source
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Amount
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Tags
-                        </th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Actions
-                        </th>
-                    </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200">
-                    {filteredTransactions.map((transaction) => (
-                        <tr key={transaction.id} className="hover:bg-gray-50">
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                {formatDate(transaction.date)}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm">
-                                <span className={`${getTypeColor(transaction.type)} font-medium capitalize`}>
-                                    {transaction.type}
-                                </span>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                {transaction.type === 'investment'
-                                    ? (transaction as any).investment_name || transaction.source
-                                    : transaction.source}
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                                <span className={getTypeColor(transaction.type)}>
-                                    {transaction.type === 'expense' ? '-' : ''}{formatCurrency(transaction.amount)}
-                                </span>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                <div className="flex flex-wrap gap-1">
-                                    {transaction.tags.map((tag, index) => (
-                                        <span
-                                            key={index}
-                                            className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800"
-                                        >
-                                            {tag}
-                                        </span>
-                                    ))}
-                                </div>
-                            </td>
-                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                <button
-                                    onClick={() => handleDelete(transaction.id)}
-                                    className="text-red-500 hover:text-red-700"
-                                >
-                                    <Trash2 size={16} />
-                                </button>
-                            </td>
+        <div>
+            <div className="overflow-x-auto mb-4">
+                <table className="min-w-full bg-white divide-y divide-gray-200 rounded-lg overflow-hidden">
+                    <thead className="bg-gray-50">
+                        <tr>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Date
+                            </th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Type
+                            </th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Source
+                            </th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Amount
+                            </th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Tags
+                            </th>
+                            <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                Actions
+                            </th>
                         </tr>
-                    ))}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                        {currentTransactions.map((transaction) => (
+                            <tr key={transaction.id} className="hover:bg-gray-50">
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    {formatDate(transaction.date)}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm">
+                                    <span className={`${getTypeColor(transaction.type)} font-medium capitalize`}>
+                                        {transaction.type}
+                                    </span>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    {transaction.type === 'investment'
+                                        ? (transaction as any).investment_name || transaction.source
+                                        : transaction.source}
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                                    <span className={getTypeColor(transaction.type)}>
+                                        {transaction.type === 'expense' ? '-' : ''}{formatCurrency(transaction.amount)}
+                                    </span>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    <div className="flex flex-wrap gap-1">
+                                        {transaction.tags.map((tag, index) => (
+                                            <span
+                                                key={index}
+                                                className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800"
+                                            >
+                                                {tag}
+                                            </span>
+                                        ))}
+                                    </div>
+                                </td>
+                                <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    <button
+                                        onClick={() => handleDelete(transaction.id)}
+                                        className="text-red-500 hover:text-red-700"
+                                    >
+                                        <Trash2 size={16} />
+                                    </button>
+                                </td>
+                            </tr>
+                        ))}
+                    </tbody>
+                </table>
+            </div>
+
+            {/* Pagination controls */}
+            <div className="flex justify-between items-center mt-4">
+                <div className="flex items-center space-x-2">
+                    <span className="text-sm text-gray-700">Rows per page:</span>
+                    <select
+                        value={itemsPerPage}
+                        onChange={handleItemsPerPageChange}
+                        className="border border-gray-300 rounded p-1 text-sm"
+                    >
+                        <option value={10}>10</option>
+                        <option value={50}>50</option>
+                        <option value={100}>100</option>
+                    </select>
+                </div>
+
+                <div className="flex items-center space-x-4">
+                    <span className="text-sm text-gray-700">
+                        {`${(currentPage - 1) * itemsPerPage + 1}-${Math.min(currentPage * itemsPerPage, filteredTransactions.length)} of ${filteredTransactions.length}`}
+                    </span>
+
+                    <div className="flex space-x-1">
+                        <button
+                            onClick={() => handlePageChange(currentPage - 1)}
+                            disabled={currentPage === 1}
+                            className="p-1 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <ChevronLeft size={20} />
+                        </button>
+                        <button
+                            onClick={() => handlePageChange(currentPage + 1)}
+                            disabled={currentPage === totalPages}
+                            className="p-1 rounded hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            <ChevronRight size={20} />
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 } 

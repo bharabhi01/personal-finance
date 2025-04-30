@@ -9,6 +9,10 @@ export default function TransactionsPage() {
     const [refreshKey, setRefreshKey] = useState(0);
     const [searchQuery, setSearchQuery] = useState('');
 
+    // Get current month's date range
+    const currentMonthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
+    const today = new Date().toISOString().split('T')[0];
+
     // Function to refresh the transaction list
     const refreshTransactions = () => {
         setRefreshKey(prev => prev + 1);
@@ -31,7 +35,8 @@ export default function TransactionsPage() {
                 </div>
                 <TransactionList
                     key={`transactions-${refreshKey}`}
-                    limit={50}
+                    startDate={currentMonthStart}
+                    endDate={today}
                     onUpdateList={refreshTransactions}
                     searchQuery={searchQuery}
                 />
