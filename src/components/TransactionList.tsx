@@ -5,7 +5,8 @@ import { useAuth } from '@/context/AuthContext';
 import { getTransactions, deleteTransaction } from '@/lib/database';
 import { Transaction, TransactionType } from '@/types';
 import { formatCurrency, formatDate } from '@/lib/utils';
-import { Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Trash2, ChevronLeft, ChevronRight, Edit } from 'lucide-react';
+import TransactionEditModal from './TransactionEditModal';
 
 interface TransactionListProps {
     type?: TransactionType;
@@ -31,6 +32,8 @@ export default function TransactionList({
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(limit);
     const [allTransactions, setAllTransactions] = useState<Transaction[]>([]);
+    const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
     useEffect(() => {
         if (!user) return;
@@ -71,6 +74,20 @@ export default function TransactionList({
             console.error('Error deleting transaction:', err);
             alert('Failed to delete transaction');
         }
+    };
+
+    const handleEdit = (transaction: Transaction) => {
+        setEditingTransaction(transaction);
+        setIsEditModalOpen(true);
+    };
+
+    const closeEditModal = () => {
+        setIsEditModalOpen(false);
+        setEditingTransaction(null);
+    };
+
+    const handleTransactionUpdated = () => {
+        if (onUpdateList) onUpdateList();
     };
 
     const getTypeColor = (type: TransactionType) => {
@@ -198,12 +215,22 @@ export default function TransactionList({
                                     </div>
                                 </td>
                                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                    <button
-                                        onClick={() => handleDelete(transaction.id)}
-                                        className="text-red-500 hover:text-red-700"
-                                    >
-                                        <Trash2 size={16} />
-                                    </button>
+                                    <div className="flex space-x-2">
+                                        <button
+                                            onClick={() => handleEdit(transaction)}
+                                            className="text-blue-500 hover:text-blue-700"
+                                            title="Edit"
+                                        >
+                                            <Edit size={16} />
+                                        </button>
+                                        <button
+                                            onClick={() => handleDelete(transaction.id)}
+                                            className="text-red-500 hover:text-red-700"
+                                            title="Delete"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         ))}
@@ -249,6 +276,15 @@ export default function TransactionList({
                     </div>
                 </div>
             </div>
+
+            {editingTransaction && (
+                <TransactionEditModal
+                    transaction={editingTransaction}
+                    isOpen={isEditModalOpen}
+                    onClose={closeEditModal}
+                    onUpdate={handleTransactionUpdated}
+                />
+            )}
         </div>
     );
 } 
