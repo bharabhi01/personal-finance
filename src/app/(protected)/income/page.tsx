@@ -3,9 +3,11 @@
 import { useState } from 'react';
 import TransactionList from '@/components/TransactionList';
 import IncomeChart from '@/components/charts/IncomeChart';
+import SearchBar from '@/components/SearchBar';
 
 export default function IncomePage() {
     const [refreshKey, setRefreshKey] = useState(0);
+    const [searchQuery, setSearchQuery] = useState('');
 
     // Function to refresh the data
     const refreshData = () => {
@@ -23,12 +25,18 @@ export default function IncomePage() {
             </div>
 
             <div className="mt-6">
-                <h2 className="text-xl font-semibold mb-4">Income History</h2>
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-semibold">Income History</h2>
+                    <div className="w-64">
+                        <SearchBar onSearch={setSearchQuery} placeholder="Search income sources..." />
+                    </div>
+                </div>
                 <TransactionList
                     key={`income-list-${refreshKey}`}
                     type="income"
                     limit={50}
                     onUpdateList={refreshData}
+                    searchQuery={searchQuery}
                 />
             </div>
         </div>

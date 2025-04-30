@@ -30,7 +30,11 @@ const transactionSchema = z.object({
 
 type TransactionFormValues = z.infer<typeof transactionSchema>;
 
-export default function TransactionForm() {
+interface TransactionFormProps {
+    onTransactionAdded?: () => void;
+}
+
+export default function TransactionForm({ onTransactionAdded }: TransactionFormProps) {
     const { user } = useAuth();
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -76,6 +80,11 @@ export default function TransactionForm() {
 
             setSuccess(true);
             reset();
+
+            // Call the refresh function if provided
+            if (onTransactionAdded) {
+                onTransactionAdded();
+            }
 
             // Clear success message after 3 seconds
             setTimeout(() => {

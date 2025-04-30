@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { getTransactions, deleteTransaction } from '@/lib/database';
 import { Transaction, TransactionType } from '@/types';
@@ -13,6 +13,7 @@ interface TransactionListProps {
     startDate?: string;
     endDate?: string;
     onUpdateList?: () => void;
+    searchQuery?: string;
 }
 
 export default function TransactionList({
@@ -20,7 +21,8 @@ export default function TransactionList({
     limit = 10,
     startDate,
     endDate,
-    onUpdateList
+    onUpdateList,
+    searchQuery = ''
 }: TransactionListProps) {
     const { user } = useAuth();
     const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -74,6 +76,19 @@ export default function TransactionList({
         }
     };
 
+    // Filter transactions based on search query
+    const filteredTransactions = useMemo(() => {
+        if (!searchQuery) return transactions;
+
+        return transactions.filter(transaction => {
+            const source = transaction.type === 'investment'
+                ? (transaction as any).investment_name || transaction.source
+                : transaction.source;
+
+            return source.toLowerCase().includes(searchQuery.toLowerCase());
+        });
+    }, [transactions, searchQuery]);
+
     if (loading) {
         return <div className="text-center py-4">Loading transactions...</div>;
     }
@@ -82,10 +97,12 @@ export default function TransactionList({
         return <div className="text-red-600 py-4">{error}</div>;
     }
 
-    if (transactions.length === 0) {
+    if (filteredTransactions.length === 0) {
         return (
             <div className="text-center py-6 bg-gray-50 rounded-lg">
-                <p className="text-gray-500">No transactions found.</p>
+                <p className="text-gray-500">
+                    {searchQuery ? `No transactions found matching "${searchQuery}"` : "No transactions found."}
+                </p>
             </div>
         );
     }
@@ -116,7 +133,7 @@ export default function TransactionList({
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200">
-                    {transactions.map((transaction) => (
+                    {filteredTransactions.map((transaction) => (
                         <tr key={transaction.id} className="hover:bg-gray-50">
                             <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                 {formatDate(transaction.date)}
