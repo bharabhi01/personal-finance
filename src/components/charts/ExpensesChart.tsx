@@ -47,14 +47,14 @@ export default function ExpensesChart() {
     const { user } = useAuth();
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [viewType, setViewType] = useState<'category' | 'trend'>('category');
+    const [viewType, setViewType] = useState<'tags' | 'trend'>('tags');
     const [period, setPeriod] = useState<'3m' | '6m' | '1y'>('3m');
 
-    const [categoryData, setCategoryData] = useState({
+    const [tagsData, setTagsData] = useState({
         labels: [] as string[],
         datasets: [
             {
-                label: 'Expenses by Category',
+                label: 'Expenses by Tag',
                 data: [] as number[],
                 backgroundColor: [] as string[],
                 borderWidth: 1,
@@ -95,34 +95,49 @@ export default function ExpensesChart() {
                     endDate.toISOString().split('T')[0]
                 );
 
-                if (viewType === 'category') {
-                    // Group expenses by source (category)
-                    const categories: Record<string, number> = {};
+                if (viewType === 'tags') {
+                    // Group expenses by tags
+                    const tagExpenses: Record<string, number> = {};
+                    const otherCategory = 'Other';
 
+                    // Process each transaction
                     transactions.forEach(transaction => {
-                        const category = transaction.source;
-                        if (!categories[category]) {
-                            categories[category] = 0;
+                        if (transaction.tags && transaction.tags.length > 0) {
+                            // Sum the amount for each tag on this transaction
+                            transaction.tags.forEach(tag => {
+                                if (!tag) return; // Skip empty tags
+
+                                if (!tagExpenses[tag]) {
+                                    tagExpenses[tag] = 0;
+                                }
+                                // Divide the amount evenly across all tags for this transaction
+                                tagExpenses[tag] += transaction.amount / transaction.tags.length;
+                            });
+                        } else {
+                            // Transactions without tags go to "Other"
+                            if (!tagExpenses[otherCategory]) {
+                                tagExpenses[otherCategory] = 0;
+                            }
+                            tagExpenses[otherCategory] += transaction.amount;
                         }
-                        categories[category] += transaction.amount;
                     });
 
-                    // Sort categories by amount spent (descending)
-                    const sortedCategories = Object.entries(categories)
+                    // Sort tags by amount spent (descending)
+                    const sortedTags = Object.entries(tagExpenses)
                         .sort((a, b) => b[1] - a[1])
-                        .slice(0, 10); // Limit to top 10 categories
+                        .slice(0, 10); // Limit to top 10 tags
 
-                    const labels = sortedCategories.map(([category]) => category);
-                    const data = sortedCategories.map(([, amount]) => amount);
+                    const labels = sortedTags.map(([tag]) => tag);
+                    const data = sortedTags.map(([, amount]) => Number(amount.toFixed(2))); // Round to 2 decimal places
 
                     // Assign colors
                     const backgroundColor = labels.map((_, i) => COLORS[i % COLORS.length]);
 
-                    setCategoryData({
+                    setTagsData({
                         labels,
                         datasets: [
                             {
-                                label: 'Expenses by Category',
+                                label: 'Expenses by Tag',
                                 data,
                                 backgroundColor,
                                 borderWidth: 1,
@@ -190,7 +205,7 @@ export default function ExpensesChart() {
             },
             title: {
                 display: true,
-                text: 'Expenses by Category',
+                text: 'Expenses by Tag',
             },
         },
     };
@@ -234,11 +249,11 @@ export default function ExpensesChart() {
                 <div className="flex space-x-2">
                     <div className="flex bg-gray-100 rounded-lg p-1 text-sm">
                         <button
-                            onClick={() => setViewType('category')}
-                            className={`px-2 py-1 rounded-md ${viewType === 'category' ? 'bg-white shadow-sm' : 'text-gray-600'
+                            onClick={() => setViewType('tags')}
+                            className={`px-2 py-1 rounded-md ${viewType === 'tags' ? 'bg-white shadow-sm' : 'text-gray-600'
                                 }`}
                         >
-                            By Category
+                            By Tag
                         </button>
                         <button
                             onClick={() => setViewType('trend')}
@@ -276,8 +291,8 @@ export default function ExpensesChart() {
             </div>
 
             <div className="h-72">
-                {viewType === 'category' ? (
-                    <Pie data={categoryData} options={pieOptions} />
+                {viewType === 'tags' ? (
+                    <Pie data={tagsData} options={pieOptions} />
                 ) : (
                     <Bar options={barOptions} data={trendData} />
                 )}
