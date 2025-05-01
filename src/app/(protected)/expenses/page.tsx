@@ -5,29 +5,49 @@ import TransactionList from '@/components/TransactionList';
 import ExpensesChart from '@/components/charts/ExpensesChart';
 import SearchBar from '@/components/SearchBar';
 import TagFilter from '@/components/TagFilter';
+import DateRangePicker from '@/components/ui/DateRangePicker';
+import { DateRange } from '@/types';
 
 export default function ExpensesPage() {
     const [refreshKey, setRefreshKey] = useState(0);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
-    // Get current month's date range
-    const currentMonthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
-    const today = new Date().toISOString().split('T')[0];
+    // Setup default date range (current month)
+    const now = new Date();
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    // Function to refresh the data
+    const [dateRange, setDateRange] = useState<DateRange>({
+        startDate: firstDayOfMonth,
+        endDate: now
+    });
+
+    // Function to refresh data
     const refreshData = () => {
         setRefreshKey(prev => prev + 1);
+    };
+
+    // Format dates for API calls
+    const formatDateForAPI = (date: Date) => {
+        return date.toISOString().split('T')[0];
     };
 
     return (
         <div>
             <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold">Expenses</h1>
+                <DateRangePicker
+                    dateRange={dateRange}
+                    onDateRangeChange={setDateRange}
+                />
             </div>
 
             <div className="mb-6">
-                <ExpensesChart key={`expenses-chart-${refreshKey}`} />
+                <ExpensesChart
+                    key={`expenses-chart-${refreshKey}-${dateRange.startDate.getTime()}-${dateRange.endDate.getTime()}`}
+                    startDate={formatDateForAPI(dateRange.startDate)}
+                    endDate={formatDateForAPI(dateRange.endDate)}
+                />
             </div>
 
             <div className="mt-6">
@@ -47,10 +67,10 @@ export default function ExpensesPage() {
                 </div>
 
                 <TransactionList
-                    key={`expenses-list-${refreshKey}`}
+                    key={`expenses-list-${refreshKey}-${dateRange.startDate.getTime()}-${dateRange.endDate.getTime()}`}
                     type="expense"
-                    startDate={currentMonthStart}
-                    endDate={today}
+                    startDate={formatDateForAPI(dateRange.startDate)}
+                    endDate={formatDateForAPI(dateRange.endDate)}
                     onUpdateList={refreshData}
                     searchQuery={searchQuery}
                     tagFilters={selectedTags}

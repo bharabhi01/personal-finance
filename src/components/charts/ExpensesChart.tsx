@@ -5,73 +5,65 @@ import {
     Chart as ChartJS,
     ArcElement,
     Tooltip,
-    Legend,
-    CategoryScale,
-    LinearScale,
-    BarElement,
-    Title,
-    ChartOptions
+    Legend
 } from 'chart.js';
-import { Pie, Bar } from 'react-chartjs-2';
-import { format, parseISO, subMonths } from 'date-fns';
+import { Pie } from 'react-chartjs-2';
 import { useAuth } from '@/context/AuthContext';
 import { getTransactions } from '@/lib/database';
 import { Transaction } from '@/types';
+import { subMonths } from 'date-fns';
 
 // Register ChartJS components
 ChartJS.register(
-    CategoryScale,
-    LinearScale,
-    BarElement,
     ArcElement,
-    Title,
     Tooltip,
     Legend
 );
 
-// Different colors for categories
-const COLORS = [
-    'rgba(255, 99, 132, 0.7)',
-    'rgba(54, 162, 235, 0.7)',
-    'rgba(255, 206, 86, 0.7)',
-    'rgba(75, 192, 192, 0.7)',
-    'rgba(153, 102, 255, 0.7)',
-    'rgba(255, 159, 64, 0.7)',
-    'rgba(199, 199, 199, 0.7)',
-    'rgba(83, 102, 255, 0.7)',
-    'rgba(40, 159, 64, 0.7)',
-    'rgba(210, 199, 199, 0.7)',
-];
+interface ExpensesChartProps {
+    startDate?: string;
+    endDate?: string;
+}
 
-export default function ExpensesChart() {
+export default function ExpensesChart({ startDate, endDate }: ExpensesChartProps) {
     const { user } = useAuth();
-    const [loading, setLoading] = useState(true);
-    const [error, setError] = useState<string | null>(null);
-    const [viewType, setViewType] = useState<'tags' | 'trend'>('tags');
-    const [period, setPeriod] = useState<'3m' | '6m' | '1y'>('3m');
-
-    const [tagsData, setTagsData] = useState({
-        labels: [] as string[],
+    const [chartData, setChartData] = useState<{
+        labels: string[];
+        datasets: {
+            data: number[];
+            backgroundColor: string[];
+            borderWidth: number;
+        }[];
+    }>({
+        labels: [],
         datasets: [
             {
-                label: 'Expenses by Tag',
-                data: [] as number[],
-                backgroundColor: [] as string[],
+                data: [],
+                backgroundColor: [],
                 borderWidth: 1,
             },
         ],
     });
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+    const [period, setPeriod] = useState<'1m' | '3m' | 'all'>('1m');
 
-    const [trendData, setTrendData] = useState({
-        labels: [] as string[],
-        datasets: [
-            {
-                label: 'Monthly Expenses',
-                data: [] as number[],
-                backgroundColor: 'rgba(255, 99, 132, 0.7)',
-            },
-        ],
-    });
+    // Determine if we should show period selector
+    const showPeriodSelector = !startDate && !endDate;
+
+    // Chart colors
+    const chartColors = [
+        'rgba(255, 99, 132, 0.7)',
+        'rgba(54, 162, 235, 0.7)',
+        'rgba(255, 206, 86, 0.7)',
+        'rgba(75, 192, 192, 0.7)',
+        'rgba(153, 102, 255, 0.7)',
+        'rgba(255, 159, 64, 0.7)',
+        'rgba(199, 199, 199, 0.7)',
+        'rgba(83, 102, 255, 0.7)',
+        'rgba(255, 99, 255, 0.7)',
+        'rgba(30, 199, 132, 0.7)',
+    ];
 
     useEffect(() => {
         if (!user) return;
@@ -80,108 +72,89 @@ export default function ExpensesChart() {
             try {
                 setLoading(true);
 
-                // Determine how many months to look back based on period
-                const monthsToLookBack = period === '3m' ? 3 : period === '6m' ? 6 : 12;
+                let fetchStartDate: string;
+                let fetchEndDate: string;
 
-                // Get date range for the period
-                const endDate = new Date();
-                const startDate = subMonths(endDate, monthsToLookBack);
-
-                // Fetch all expense transactions in the period
-                const transactions = await getTransactions(
-                    user.id,
-                    'expense',
-                    startDate.toISOString().split('T')[0],
-                    endDate.toISOString().split('T')[0]
-                );
-
-                if (viewType === 'tags') {
-                    // Group expenses by tags
-                    const tagExpenses: Record<string, number> = {};
-                    const otherCategory = 'Other';
-
-                    // Process each transaction
-                    transactions.forEach(transaction => {
-                        if (transaction.tags && transaction.tags.length > 0) {
-                            // Sum the amount for each tag on this transaction
-                            transaction.tags.forEach(tag => {
-                                if (!tag) return; // Skip empty tags
-
-                                if (!tagExpenses[tag]) {
-                                    tagExpenses[tag] = 0;
-                                }
-                                // Divide the amount evenly across all tags for this transaction
-                                tagExpenses[tag] += transaction.amount / transaction.tags.length;
-                            });
-                        } else {
-                            // Transactions without tags go to "Other"
-                            if (!tagExpenses[otherCategory]) {
-                                tagExpenses[otherCategory] = 0;
-                            }
-                            tagExpenses[otherCategory] += transaction.amount;
-                        }
-                    });
-
-                    // Sort tags by amount spent (descending)
-                    const sortedTags = Object.entries(tagExpenses)
-                        .sort((a, b) => b[1] - a[1])
-                        .slice(0, 10); // Limit to top 10 tags
-
-                    const labels = sortedTags.map(([tag]) => tag);
-                    const data = sortedTags.map(([, amount]) => Number(amount.toFixed(2))); // Round to 2 decimal places
-
-                    // Assign colors
-                    const backgroundColor = labels.map((_, i) => COLORS[i % COLORS.length]);
-
-                    setTagsData({
-                        labels,
-                        datasets: [
-                            {
-                                label: 'Expenses by Tag',
-                                data,
-                                backgroundColor,
-                                borderWidth: 1,
-                            },
-                        ],
-                    });
+                if (startDate && endDate) {
+                    // Use provided date range
+                    fetchStartDate = startDate;
+                    fetchEndDate = endDate;
                 } else {
-                    // Trend view: Group expenses by month
-                    const months: Record<string, Transaction[]> = {};
+                    // Use period selector's date range
+                    const now = new Date();
 
-                    // Initialize all months in the period with empty arrays
-                    for (let i = 0; i < monthsToLookBack; i++) {
-                        const monthDate = subMonths(endDate, i);
-                        const monthKey = format(monthDate, 'MMM yyyy');
-                        months[monthKey] = [];
+                    if (period === '1m') {
+                        fetchStartDate = new Date(now.getFullYear(), now.getMonth(), 1).toISOString().split('T')[0];
+                    } else if (period === '3m') {
+                        fetchStartDate = subMonths(now, 3).toISOString().split('T')[0];
+                    } else {
+                        // 'all' - fetch all expenses
+                        fetchStartDate = new Date(2000, 0, 1).toISOString().split('T')[0]; // Arbitrary past date
                     }
 
-                    // Group transactions by month
-                    transactions.forEach(transaction => {
-                        const date = parseISO(transaction.date);
-                        const monthKey = format(date, 'MMM yyyy');
-
-                        if (months[monthKey]) {
-                            months[monthKey].push(transaction);
-                        }
-                    });
-
-                    // Calculate total expenses for each month
-                    const labels = Object.keys(months).reverse();
-                    const data = labels.map(month => {
-                        return months[month].reduce((sum, transaction) => sum + transaction.amount, 0);
-                    });
-
-                    setTrendData({
-                        labels,
-                        datasets: [
-                            {
-                                label: 'Monthly Expenses',
-                                data,
-                                backgroundColor: 'rgba(255, 99, 132, 0.7)',
-                            },
-                        ],
-                    });
+                    fetchEndDate = now.toISOString().split('T')[0];
                 }
+
+                // Fetch expense transactions in the period
+                const expenses = await getTransactions(
+                    user.id,
+                    'expense',
+                    fetchStartDate,
+                    fetchEndDate
+                );
+
+                // Group expenses by tags
+                const tagTotals: Record<string, number> = {};
+
+                expenses.forEach(expense => {
+                    if (expense.tags.length === 0) {
+                        // Handle expenses with no tags
+                        const key = 'Uncategorized';
+                        tagTotals[key] = (tagTotals[key] || 0) + expense.amount;
+                    } else {
+                        // Use the first tag as the category
+                        const key = expense.tags[0];
+                        tagTotals[key] = (tagTotals[key] || 0) + expense.amount;
+                    }
+                });
+
+                // Sort tags by amount spent (descending)
+                const sortedTags = Object.entries(tagTotals)
+                    .sort((a, b) => b[1] - a[1])
+                    .slice(0, 7); // Limit to top 7 categories
+
+                // Handle "Others" category if there are more than 7 categories
+                let others = 0;
+                if (Object.keys(tagTotals).length > 7) {
+                    others = Object.entries(tagTotals)
+                        .sort((a, b) => b[1] - a[1])
+                        .slice(7)
+                        .reduce((sum, [_, amount]) => sum + amount, 0);
+                }
+
+                // Prepare chart data
+                const labels = sortedTags.map(([tag]) => tag);
+                const data = sortedTags.map(([_, amount]) => amount);
+
+                // Add "Others" if needed
+                if (others > 0) {
+                    labels.push('Others');
+                    data.push(others);
+                }
+
+                // Prepare colors (ensure there are enough)
+                const backgroundColor = labels.map((_, i) => chartColors[i % chartColors.length]);
+
+                setChartData({
+                    labels,
+                    datasets: [
+                        {
+                            data,
+                            backgroundColor,
+                            borderWidth: 1,
+                        },
+                    ],
+                });
 
                 setError(null);
             } catch (err) {
@@ -193,46 +166,7 @@ export default function ExpensesChart() {
         };
 
         fetchChartData();
-    }, [user, period, viewType]);
-
-    const pieOptions = {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                position: 'right' as const,
-                display: true,
-            },
-            title: {
-                display: true,
-                text: 'Expenses by Tag',
-            },
-        },
-    };
-
-    const barOptions: ChartOptions<'bar'> = {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                position: 'top' as const,
-            },
-            title: {
-                display: true,
-                text: 'Monthly Expenses',
-            },
-        },
-        scales: {
-            y: {
-                beginAtZero: true,
-                ticks: {
-                    callback: function (value) {
-                        return '₹' + value;
-                    }
-                }
-            }
-        }
-    };
+    }, [user, period, startDate, endDate]);
 
     if (loading) {
         return <div className="h-72 flex items-center justify-center">Loading chart...</div>;
@@ -242,60 +176,65 @@ export default function ExpensesChart() {
         return <div className="text-red-600 py-4">{error}</div>;
     }
 
+    // Don't show the chart if there's no data
+    if (chartData.labels.length === 0 || chartData.datasets[0].data.length === 0) {
+        return (
+            <div className="bg-white p-4 rounded-lg shadow-sm h-72 flex items-center justify-center">
+                <p className="text-gray-500">No expense data available for this period.</p>
+            </div>
+        );
+    }
+
     return (
         <div className="bg-white p-4 rounded-lg shadow-sm">
-            <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold">Expense Analysis</h2>
-                <div className="flex space-x-2">
+            {showPeriodSelector && (
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-lg font-semibold">Expense Categories</h2>
                     <div className="flex bg-gray-100 rounded-lg p-1 text-sm">
                         <button
-                            onClick={() => setViewType('tags')}
-                            className={`px-2 py-1 rounded-md ${viewType === 'tags' ? 'bg-white shadow-sm' : 'text-gray-600'
-                                }`}
+                            onClick={() => setPeriod('1m')}
+                            className={`px-2 py-1 rounded-md ${period === '1m' ? 'bg-white shadow-sm' : 'text-gray-600'}`}
                         >
-                            By Tag
+                            1M
                         </button>
-                        <button
-                            onClick={() => setViewType('trend')}
-                            className={`px-2 py-1 rounded-md ${viewType === 'trend' ? 'bg-white shadow-sm' : 'text-gray-600'
-                                }`}
-                        >
-                            Trend
-                        </button>
-                    </div>
-
-                    <div className="flex bg-gray-100 rounded-lg p-1 text-sm">
                         <button
                             onClick={() => setPeriod('3m')}
-                            className={`px-2 py-1 rounded-md ${period === '3m' ? 'bg-white shadow-sm' : 'text-gray-600'
-                                }`}
+                            className={`px-2 py-1 rounded-md ${period === '3m' ? 'bg-white shadow-sm' : 'text-gray-600'}`}
                         >
                             3M
                         </button>
                         <button
-                            onClick={() => setPeriod('6m')}
-                            className={`px-2 py-1 rounded-md ${period === '6m' ? 'bg-white shadow-sm' : 'text-gray-600'
-                                }`}
+                            onClick={() => setPeriod('all')}
+                            className={`px-2 py-1 rounded-md ${period === 'all' ? 'bg-white shadow-sm' : 'text-gray-600'}`}
                         >
-                            6M
-                        </button>
-                        <button
-                            onClick={() => setPeriod('1y')}
-                            className={`px-2 py-1 rounded-md ${period === '1y' ? 'bg-white shadow-sm' : 'text-gray-600'
-                                }`}
-                        >
-                            1Y
+                            All
                         </button>
                     </div>
                 </div>
-            </div>
+            )}
 
-            <div className="h-72">
-                {viewType === 'tags' ? (
-                    <Pie data={tagsData} options={pieOptions} />
-                ) : (
-                    <Bar options={barOptions} data={trendData} />
-                )}
+            {!showPeriodSelector && (
+                <div className="mb-4">
+                    <h2 className="text-lg font-semibold">Expense Categories</h2>
+                </div>
+            )}
+
+            <div className="h-64 flex justify-center">
+                <Pie
+                    data={chartData}
+                    options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'right',
+                                labels: {
+                                    boxWidth: 12
+                                }
+                            }
+                        }
+                    }}
+                />
             </div>
         </div>
     );

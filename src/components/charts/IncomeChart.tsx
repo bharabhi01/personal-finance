@@ -27,7 +27,12 @@ ChartJS.register(
     Legend
 );
 
-export default function IncomeChart() {
+interface IncomeChartProps {
+    startDate?: string;
+    endDate?: string;
+}
+
+export default function IncomeChart({ startDate, endDate }: IncomeChartProps) {
     const { user } = useAuth();
     const [chartData, setChartData] = useState<{
         labels: string[];
@@ -50,6 +55,9 @@ export default function IncomeChart() {
     const [error, setError] = useState<string | null>(null);
     const [period, setPeriod] = useState<'3m' | '6m' | '1y'>('6m');
 
+    // Determine if we should show period selector
+    const showPeriodSelector = !startDate && !endDate;
+
     useEffect(() => {
         if (!user) return;
 
@@ -57,46 +65,51 @@ export default function IncomeChart() {
             try {
                 setLoading(true);
 
-                // Determine how many months to look back based on period
-                const monthsToLookBack = period === '3m' ? 3 : period === '6m' ? 6 : 12;
+                let fetchStartDate: string;
+                let fetchEndDate: string;
 
-                // Get date range for the period
-                const endDate = new Date();
-                const startDate = subMonths(endDate, monthsToLookBack);
+                if (startDate && endDate) {
+                    // Use provided date range
+                    fetchStartDate = startDate;
+                    fetchEndDate = endDate;
+                } else {
+                    // Use period selector's date range
+                    const monthsToLookBack = period === '3m' ? 3 : period === '6m' ? 6 : 12;
+                    const endDateObj = new Date();
+                    const startDateObj = subMonths(endDateObj, monthsToLookBack);
+
+                    fetchStartDate = startDateObj.toISOString().split('T')[0];
+                    fetchEndDate = endDateObj.toISOString().split('T')[0];
+                }
 
                 // Fetch all income transactions in the period
                 const transactions = await getTransactions(
                     user.id,
                     'income',
-                    startDate.toISOString().split('T')[0],
-                    endDate.toISOString().split('T')[0]
+                    fetchStartDate,
+                    fetchEndDate
                 );
 
-                // Create monthly buckets for the date range
-                const months: Record<string, Transaction[]> = {};
-
-                // Initialize all months in the period with empty arrays
-                for (let i = 0; i < monthsToLookBack; i++) {
-                    const monthDate = subMonths(endDate, i);
-                    const monthKey = format(monthDate, 'MMM yyyy');
-                    months[monthKey] = [];
-                }
-
                 // Group transactions by month
+                const monthlyData: Record<string, number> = {};
+
                 transactions.forEach(transaction => {
                     const date = parseISO(transaction.date);
                     const monthKey = format(date, 'MMM yyyy');
 
-                    if (months[monthKey]) {
-                        months[monthKey].push(transaction);
+                    if (!monthlyData[monthKey]) {
+                        monthlyData[monthKey] = 0;
                     }
+
+                    monthlyData[monthKey] += transaction.amount;
                 });
 
-                // Calculate total income for each month
-                const labels = Object.keys(months).reverse();
-                const data = labels.map(month => {
-                    return months[month].reduce((sum, transaction) => sum + transaction.amount, 0);
+                // Sort months chronologically
+                const labels = Object.keys(monthlyData).sort((a, b) => {
+                    return parseISO(a).getTime() - parseISO(b).getTime();
                 });
+
+                const data = labels.map(month => monthlyData[month]);
 
                 setChartData({
                     labels,
@@ -119,7 +132,7 @@ export default function IncomeChart() {
         };
 
         fetchChartData();
-    }, [user, period]);
+    }, [user, period, startDate, endDate]);
 
     const options: ChartOptions<'bar'> = {
         responsive: true,
@@ -155,32 +168,38 @@ export default function IncomeChart() {
 
     return (
         <div className="bg-white p-4 rounded-lg shadow-sm">
-            <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold">Income Trend</h2>
-                <div className="flex bg-gray-100 rounded-lg p-1 text-sm">
-                    <button
-                        onClick={() => setPeriod('3m')}
-                        className={`px-2 py-1 rounded-md ${period === '3m' ? 'bg-white shadow-sm' : 'text-gray-600'
-                            }`}
-                    >
-                        3M
-                    </button>
-                    <button
-                        onClick={() => setPeriod('6m')}
-                        className={`px-2 py-1 rounded-md ${period === '6m' ? 'bg-white shadow-sm' : 'text-gray-600'
-                            }`}
-                    >
-                        6M
-                    </button>
-                    <button
-                        onClick={() => setPeriod('1y')}
-                        className={`px-2 py-1 rounded-md ${period === '1y' ? 'bg-white shadow-sm' : 'text-gray-600'
-                            }`}
-                    >
-                        1Y
-                    </button>
+            {showPeriodSelector && (
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-lg font-semibold">Income Trend</h2>
+                    <div className="flex bg-gray-100 rounded-lg p-1 text-sm">
+                        <button
+                            onClick={() => setPeriod('3m')}
+                            className={`px-2 py-1 rounded-md ${period === '3m' ? 'bg-white shadow-sm' : 'text-gray-600'}`}
+                        >
+                            3M
+                        </button>
+                        <button
+                            onClick={() => setPeriod('6m')}
+                            className={`px-2 py-1 rounded-md ${period === '6m' ? 'bg-white shadow-sm' : 'text-gray-600'}`}
+                        >
+                            6M
+                        </button>
+                        <button
+                            onClick={() => setPeriod('1y')}
+                            className={`px-2 py-1 rounded-md ${period === '1y' ? 'bg-white shadow-sm' : 'text-gray-600'}`}
+                        >
+                            1Y
+                        </button>
+                    </div>
                 </div>
-            </div>
+            )}
+
+            {!showPeriodSelector && (
+                <div className="mb-4">
+                    <h2 className="text-lg font-semibold">Income Trend</h2>
+                </div>
+            )}
+
             <div className="h-64">
                 <Bar options={options} data={chartData} />
             </div>

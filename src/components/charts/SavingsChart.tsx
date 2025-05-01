@@ -9,9 +9,8 @@ import {
     LineElement,
     Title,
     Tooltip,
-    Filler,
     Legend,
-    ChartOptions
+    Filler
 } from 'chart.js';
 import { Line } from 'react-chartjs-2';
 import { format, parseISO, subMonths } from 'date-fns';
@@ -28,11 +27,16 @@ ChartJS.register(
     LineElement,
     Title,
     Tooltip,
-    Filler,
-    Legend
+    Legend,
+    Filler
 );
 
-export default function SavingsChart() {
+interface SavingsChartProps {
+    startDate?: string;
+    endDate?: string;
+}
+
+export default function SavingsChart({ startDate, endDate }: SavingsChartProps) {
     const { user } = useAuth();
     const [chartData, setChartData] = useState<{
         labels: string[];
@@ -61,6 +65,9 @@ export default function SavingsChart() {
     const [error, setError] = useState<string | null>(null);
     const [period, setPeriod] = useState<'6m' | '1y'>('6m');
 
+    // Determine if we should show period selector
+    const showPeriodSelector = !startDate && !endDate;
+
     useEffect(() => {
         if (!user) return;
 
@@ -68,27 +75,50 @@ export default function SavingsChart() {
             try {
                 setLoading(true);
 
-                // Determine how many months to look back based on period
-                const monthsToLookBack = period === '6m' ? 6 : 12;
+                let fetchStartDate: string;
+                let fetchEndDate: string;
 
-                // Get date range for the period
-                const endDate = new Date();
-                const startDate = subMonths(endDate, monthsToLookBack);
+                if (startDate && endDate) {
+                    // Use provided date range
+                    fetchStartDate = startDate;
+                    fetchEndDate = endDate;
+                } else {
+                    // Use period selector's date range
+                    const monthsToLookBack = period === '6m' ? 6 : 12;
+                    const endDateObj = new Date();
+                    const startDateObj = subMonths(endDateObj, monthsToLookBack);
+
+                    fetchStartDate = startDateObj.toISOString().split('T')[0];
+                    fetchEndDate = endDateObj.toISOString().split('T')[0];
+                }
 
                 // Fetch all transactions in the period
                 const transactions = await getTransactions(
                     user.id,
                     undefined,
-                    startDate.toISOString().split('T')[0],
-                    endDate.toISOString().split('T')[0]
+                    fetchStartDate,
+                    fetchEndDate
                 );
 
                 // Group transactions by month
                 const months: Record<string, Transaction[]> = {};
 
+                // Get date objects for provided dates
+                const startDateObj = new Date(fetchStartDate);
+                const endDateObj = new Date(fetchEndDate);
+
+                // Calculate number of months between start and end date
+                const monthDiff =
+                    (endDateObj.getFullYear() - startDateObj.getFullYear()) * 12 +
+                    (endDateObj.getMonth() - startDateObj.getMonth()) + 1;
+
                 // Initialize all months in the period with empty arrays
-                for (let i = 0; i < monthsToLookBack; i++) {
-                    const monthDate = subMonths(endDate, i);
+                for (let i = 0; i < monthDiff; i++) {
+                    const monthDate = new Date(
+                        startDateObj.getFullYear(),
+                        startDateObj.getMonth() + i,
+                        1
+                    );
                     const monthKey = format(monthDate, 'MMM yyyy');
                     months[monthKey] = [];
                 }
@@ -104,7 +134,12 @@ export default function SavingsChart() {
                 });
 
                 // Calculate savings for each month (income - (expenses + investments))
-                const labels = Object.keys(months).reverse();
+                const labels = Object.keys(months).sort((a, b) => {
+                    const dateA = new Date(a);
+                    const dateB = new Date(b);
+                    return dateA.getTime() - dateB.getTime();
+                });
+
                 const data = labels.map(month => {
                     const monthTransactions = months[month];
 
@@ -147,30 +182,7 @@ export default function SavingsChart() {
         };
 
         fetchChartData();
-    }, [user, period]);
-
-    const options: ChartOptions<'line'> = {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-            legend: {
-                position: 'top' as const,
-            },
-            title: {
-                display: true,
-                text: 'Monthly Savings Trend',
-            },
-        },
-        scales: {
-            y: {
-                ticks: {
-                    callback: function (value) {
-                        return '₹' + value;
-                    }
-                }
-            }
-        }
-    };
+    }, [user, period, startDate, endDate]);
 
     if (loading) {
         return <div className="h-72 flex items-center justify-center">Loading chart...</div>;
@@ -182,27 +194,55 @@ export default function SavingsChart() {
 
     return (
         <div className="bg-white p-4 rounded-lg shadow-sm">
-            <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold">Savings Trend</h2>
-                <div className="flex bg-gray-100 rounded-lg p-1 text-sm">
-                    <button
-                        onClick={() => setPeriod('6m')}
-                        className={`px-2 py-1 rounded-md ${period === '6m' ? 'bg-white shadow-sm' : 'text-gray-600'
-                            }`}
-                    >
-                        6M
-                    </button>
-                    <button
-                        onClick={() => setPeriod('1y')}
-                        className={`px-2 py-1 rounded-md ${period === '1y' ? 'bg-white shadow-sm' : 'text-gray-600'
-                            }`}
-                    >
-                        1Y
-                    </button>
+            {showPeriodSelector && (
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-lg font-semibold">Savings Trend</h2>
+                    <div className="flex bg-gray-100 rounded-lg p-1 text-sm">
+                        <button
+                            onClick={() => setPeriod('6m')}
+                            className={`px-2 py-1 rounded-md ${period === '6m' ? 'bg-white shadow-sm' : 'text-gray-600'}`}
+                        >
+                            6M
+                        </button>
+                        <button
+                            onClick={() => setPeriod('1y')}
+                            className={`px-2 py-1 rounded-md ${period === '1y' ? 'bg-white shadow-sm' : 'text-gray-600'}`}
+                        >
+                            1Y
+                        </button>
+                    </div>
                 </div>
-            </div>
+            )}
+
+            {!showPeriodSelector && (
+                <div className="mb-4">
+                    <h2 className="text-lg font-semibold">Savings Trend</h2>
+                </div>
+            )}
+
             <div className="h-64">
-                <Line options={options} data={chartData} />
+                <Line
+                    data={chartData}
+                    options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false,
+                            },
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function (value) {
+                                        return '₹' + value;
+                                    }
+                                }
+                            }
+                        }
+                    }}
+                />
             </div>
         </div>
     );

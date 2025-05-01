@@ -13,7 +13,12 @@ interface Summary {
     savings: number;
 }
 
-export default function DashboardSummary() {
+interface DashboardSummaryProps {
+    startDate?: string;
+    endDate?: string;
+}
+
+export default function DashboardSummary({ startDate, endDate }: DashboardSummaryProps) {
     const { user } = useAuth();
     const [summary, setSummary] = useState<Summary>({
         income: 0,
@@ -23,7 +28,7 @@ export default function DashboardSummary() {
     });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [period, setPeriod] = useState<'month' | 'all'>('month');
+    const [period, setPeriod] = useState<'month' | 'all'>(startDate ? 'all' : 'month');
 
     useEffect(() => {
         if (!user) return;
@@ -32,16 +37,23 @@ export default function DashboardSummary() {
             try {
                 setLoading(true);
 
-                // Get current month start and end dates if period is 'month'
-                let startDate: string | undefined;
-                if (period === 'month') {
+                // Use provided date range if available, otherwise use period logic
+                let currentStartDate = startDate;
+                let currentEndDate = endDate;
+
+                if (!currentStartDate && period === 'month') {
                     const now = new Date();
                     const firstDay = new Date(now.getFullYear(), now.getMonth(), 1);
-                    startDate = firstDay.toISOString().split('T')[0];
+                    currentStartDate = firstDay.toISOString().split('T')[0];
                 }
 
                 // Fetch transactions
-                const allTransactions = await getTransactions(user.id, undefined, startDate);
+                const allTransactions = await getTransactions(
+                    user.id,
+                    undefined,
+                    currentStartDate,
+                    currentEndDate
+                );
 
                 // Calculate totals
                 const income = allTransactions
@@ -75,7 +87,10 @@ export default function DashboardSummary() {
         };
 
         fetchSummary();
-    }, [user, period]);
+    }, [user, period, startDate, endDate]);
+
+    // Don't show period selector if date range is provided from parent
+    const showPeriodSelector = !startDate && !endDate;
 
     if (loading) {
         return <div className="h-40 flex items-center justify-center">Loading summary...</div>;
@@ -87,25 +102,31 @@ export default function DashboardSummary() {
 
     return (
         <div>
-            <div className="flex justify-between items-center mb-4">
-                <h2 className="text-xl font-semibold">Financial Summary</h2>
-                <div className="flex bg-gray-100 rounded-lg p-1">
-                    <button
-                        onClick={() => setPeriod('month')}
-                        className={`px-3 py-1 rounded-md ${period === 'month' ? 'bg-white shadow-sm' : 'text-gray-600'
-                            }`}
-                    >
-                        This Month
-                    </button>
-                    <button
-                        onClick={() => setPeriod('all')}
-                        className={`px-3 py-1 rounded-md ${period === 'all' ? 'bg-white shadow-sm' : 'text-gray-600'
-                            }`}
-                    >
-                        All Time
-                    </button>
+            {showPeriodSelector && (
+                <div className="flex justify-between items-center mb-4">
+                    <h2 className="text-xl font-semibold">Financial Summary</h2>
+                    <div className="flex bg-gray-100 rounded-lg p-1">
+                        <button
+                            onClick={() => setPeriod('month')}
+                            className={`px-3 py-1 rounded-md ${period === 'month' ? 'bg-white shadow-sm' : 'text-gray-600'}`}
+                        >
+                            This Month
+                        </button>
+                        <button
+                            onClick={() => setPeriod('all')}
+                            className={`px-3 py-1 rounded-md ${period === 'all' ? 'bg-white shadow-sm' : 'text-gray-600'}`}
+                        >
+                            All Time
+                        </button>
+                    </div>
                 </div>
-            </div>
+            )}
+
+            {!showPeriodSelector && (
+                <div className="mb-4">
+                    <h2 className="text-xl font-semibold">Financial Summary</h2>
+                </div>
+            )}
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                 <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">

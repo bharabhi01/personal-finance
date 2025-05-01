@@ -5,34 +5,55 @@ import TransactionForm from '@/components/TransactionForm';
 import TransactionList from '@/components/TransactionList';
 import SearchBar from '@/components/SearchBar';
 import TagFilter from '@/components/TagFilter';
+import DateRangePicker from '@/components/ui/DateRangePicker';
+import { DateRange } from '@/types';
 
 export default function TransactionsPage() {
     const [refreshKey, setRefreshKey] = useState(0);
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedTags, setSelectedTags] = useState<string[]>([]);
 
-    // Get current month's date range
-    const currentMonthStart = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().split('T')[0];
-    const today = new Date().toISOString().split('T')[0];
+    // Setup default date range (current month)
+    const now = new Date();
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
 
-    // Function to refresh the transaction list
-    const refreshTransactions = () => {
+    const [dateRange, setDateRange] = useState<DateRange>({
+        startDate: firstDayOfMonth,
+        endDate: now
+    });
+
+    // Function to refresh data
+    const refreshData = () => {
         setRefreshKey(prev => prev + 1);
+    };
+
+    // Format dates for API calls
+    const formatDateForAPI = (date: Date) => {
+        return date.toISOString().split('T')[0];
     };
 
     return (
         <div>
             <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold">All Transactions</h1>
+                <h1 className="text-2xl font-bold">Transactions</h1>
             </div>
 
-            <TransactionForm onTransactionAdded={refreshTransactions} />
+            <TransactionForm onTransactionAdded={refreshData} />
 
             <div className="mt-6">
-                <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-semibold">Transaction History</h2>
-                    <div className="w-64">
-                        <SearchBar onSearch={setSearchQuery} />
+                <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+                    <div className="w-full md:w-64">
+                        <SearchBar
+                            onSearch={setSearchQuery}
+                            placeholder="Search transactions..."
+                        />
+                    </div>
+
+                    <div className="flex items-center gap-4">
+                        <DateRangePicker
+                            dateRange={dateRange}
+                            onDateRangeChange={setDateRange}
+                        />
                     </div>
                 </div>
 
@@ -44,10 +65,10 @@ export default function TransactionsPage() {
                 </div>
 
                 <TransactionList
-                    key={`transactions-${refreshKey}`}
-                    startDate={currentMonthStart}
-                    endDate={today}
-                    onUpdateList={refreshTransactions}
+                    key={`transaction-list-${refreshKey}-${dateRange.startDate.getTime()}-${dateRange.endDate.getTime()}`}
+                    startDate={formatDateForAPI(dateRange.startDate)}
+                    endDate={formatDateForAPI(dateRange.endDate)}
+                    onUpdateList={refreshData}
                     searchQuery={searchQuery}
                     tagFilters={selectedTags}
                 />
