@@ -6,6 +6,7 @@ import SearchBar from '@/components/SearchBar';
 import TagFilter from '@/components/TagFilter';
 import DateRangePicker from '@/components/ui/DateRangePicker';
 import { DateRange } from '@/types';
+import { formatDateForIST, startOfMonthIST } from '@/lib/utils';
 
 export default function InvestmentsPage() {
     const [refreshKey, setRefreshKey] = useState(0);
@@ -14,7 +15,7 @@ export default function InvestmentsPage() {
 
     // Setup default date range (current month)
     const now = new Date();
-    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const firstDayOfMonth = startOfMonthIST(now);
 
     const [dateRange, setDateRange] = useState<DateRange>({
         startDate: firstDayOfMonth,
@@ -24,11 +25,6 @@ export default function InvestmentsPage() {
     // Function to refresh data
     const refreshData = () => {
         setRefreshKey(prev => prev + 1);
-    };
-
-    // Format dates for API calls
-    const formatDateForAPI = (date: Date) => {
-        return date.toISOString().split('T')[0];
     };
 
     return (
@@ -60,8 +56,8 @@ export default function InvestmentsPage() {
                 <TransactionList
                     key={`investments-list-${refreshKey}-${dateRange.startDate.getTime()}-${dateRange.endDate.getTime()}`}
                     type="investment"
-                    startDate={formatDateForAPI(dateRange.startDate)}
-                    endDate={formatDateForAPI(dateRange.endDate)}
+                    startDate={formatDateForIST(dateRange.startDate)}
+                    endDate={formatDateForIST(dateRange.endDate)}
                     onUpdateList={refreshData}
                     searchQuery={searchQuery}
                     tagFilters={selectedTags}

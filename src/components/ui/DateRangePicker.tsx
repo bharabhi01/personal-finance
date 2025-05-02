@@ -1,9 +1,16 @@
 'use client';
 
 import { useState } from 'react';
-import { Calendar, CalendarIcon } from 'lucide-react';
+import { CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { DateRange } from '@/types';
+import {
+    toIndianTime,
+    startOfDayIST,
+    endOfDayIST,
+    startOfMonthIST,
+    formatDateForIST
+} from '@/lib/utils';
 
 interface DateRangePickerProps {
     dateRange: DateRange;
@@ -14,7 +21,13 @@ export default function DateRangePicker({ dateRange, onDateRangeChange }: DateRa
     const [isOpen, setIsOpen] = useState(false);
 
     const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const newStartDate = e.target.value ? new Date(e.target.value) : new Date();
+        const dateValue = e.target.value;
+        if (!dateValue) return;
+
+        // Parse the date in YYYY-MM-DD format and set it to IST
+        const [year, month, day] = dateValue.split('-').map(num => parseInt(num, 10));
+        const newStartDate = new Date(year, month - 1, day, 0, 0, 0);
+
         onDateRangeChange({
             ...dateRange,
             startDate: newStartDate
@@ -22,7 +35,13 @@ export default function DateRangePicker({ dateRange, onDateRangeChange }: DateRa
     };
 
     const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-        const newEndDate = e.target.value ? new Date(e.target.value) : new Date();
+        const dateValue = e.target.value;
+        if (!dateValue) return;
+
+        // Parse the date in YYYY-MM-DD format and set it to IST
+        const [year, month, day] = dateValue.split('-').map(num => parseInt(num, 10));
+        const newEndDate = new Date(year, month - 1, day, 23, 59, 59);
+
         onDateRangeChange({
             ...dateRange,
             endDate: newEndDate
@@ -31,41 +50,45 @@ export default function DateRangePicker({ dateRange, onDateRangeChange }: DateRa
 
     // Preset date ranges
     const applyPreset = (preset: 'today' | 'week' | 'month' | 'year' | 'allTime') => {
-        const now = new Date();
+        const now = new Date(); // Current date in local time
+        const istNow = toIndianTime(now); // Convert to IST
         let startDate: Date;
 
         switch (preset) {
             case 'today':
-                startDate = new Date(now);
+                startDate = startOfDayIST(now);
                 break;
             case 'week':
-                startDate = new Date(now);
-                startDate.setDate(now.getDate() - 7);
+                // 7 days before today in IST
+                startDate = startOfDayIST(now);
+                startDate.setDate(startDate.getDate() - 7);
                 break;
             case 'month':
-                startDate = new Date(now.getFullYear(), now.getMonth(), 1);
+                // First day of current month in IST
+                startDate = startOfMonthIST(now);
                 break;
             case 'year':
-                startDate = new Date(now.getFullYear(), 0, 1);
+                // First day of current year in IST
+                startDate = new Date(istNow.getFullYear(), 0, 1, 0, 0, 0);
                 break;
             case 'allTime':
-                startDate = new Date(2000, 0, 1); // Arbitrary past date
+                // A date far in the past for "all time" view
+                startDate = new Date(2000, 0, 1, 0, 0, 0);
                 break;
             default:
-                startDate = new Date(now);
+                startDate = startOfDayIST(now);
                 break;
         }
 
+        // End date is today at end of day in IST
+        const endDate = endOfDayIST(now);
+
         onDateRangeChange({
             startDate,
-            endDate: now
+            endDate
         });
 
         setIsOpen(false);
-    };
-
-    const formatDateForInput = (date: Date) => {
-        return date.toISOString().split('T')[0];
     };
 
     return (
@@ -77,7 +100,7 @@ export default function DateRangePicker({ dateRange, onDateRangeChange }: DateRa
                 <div className="flex items-center space-x-2">
                     <CalendarIcon className="h-4 w-4 text-gray-500" />
                     <span className="text-sm">
-                        {format(dateRange.startDate, 'dd MMM yyyy')} - {format(dateRange.endDate, 'dd MMM yyyy')}
+                        {format(toIndianTime(dateRange.startDate), 'dd MMM yyyy')} - {format(toIndianTime(dateRange.endDate), 'dd MMM yyyy')}
                     </span>
                 </div>
             </div>
@@ -90,9 +113,9 @@ export default function DateRangePicker({ dateRange, onDateRangeChange }: DateRa
                             <input
                                 type="date"
                                 className="w-full border rounded-md p-2 text-sm"
-                                value={formatDateForInput(dateRange.startDate)}
+                                value={formatDateForIST(dateRange.startDate)}
                                 onChange={handleStartDateChange}
-                                max={formatDateForInput(dateRange.endDate)}
+                                max={formatDateForIST(dateRange.endDate)}
                             />
                         </div>
 
@@ -101,9 +124,9 @@ export default function DateRangePicker({ dateRange, onDateRangeChange }: DateRa
                             <input
                                 type="date"
                                 className="w-full border rounded-md p-2 text-sm"
-                                value={formatDateForInput(dateRange.endDate)}
+                                value={formatDateForIST(dateRange.endDate)}
                                 onChange={handleEndDateChange}
-                                min={formatDateForInput(dateRange.startDate)}
+                                min={formatDateForIST(dateRange.startDate)}
                             />
                         </div>
 

@@ -9,6 +9,7 @@ import SavingsChart from '@/components/charts/SavingsChart';
 import DateRangePicker from '@/components/ui/DateRangePicker';
 import { useAuth } from '@/context/AuthContext';
 import { DateRange } from '@/types';
+import { formatDateForIST, startOfMonthIST } from '@/lib/utils';
 
 export default function Dashboard() {
     const { user } = useAuth();
@@ -16,7 +17,7 @@ export default function Dashboard() {
 
     // Setup default date range (current month)
     const now = new Date();
-    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const firstDayOfMonth = startOfMonthIST(now);
 
     const [dateRange, setDateRange] = useState<DateRange>({
         startDate: firstDayOfMonth,
@@ -26,11 +27,6 @@ export default function Dashboard() {
     // Function to refresh data
     const refreshData = () => {
         setRefreshKey(prev => prev + 1);
-    };
-
-    // Format dates for API calls
-    const formatDateForAPI = (date: Date) => {
-        return date.toISOString().split('T')[0];
     };
 
     return (
@@ -45,28 +41,28 @@ export default function Dashboard() {
 
             <DashboardSummary
                 key={`summary-${refreshKey}-${dateRange.startDate.getTime()}-${dateRange.endDate.getTime()}`}
-                startDate={formatDateForAPI(dateRange.startDate)}
-                endDate={formatDateForAPI(dateRange.endDate)}
+                startDate={formatDateForIST(dateRange.startDate)}
+                endDate={formatDateForIST(dateRange.endDate)}
             />
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-6">
                 <IncomeChart
                     key={`income-chart-${refreshKey}-${dateRange.startDate.getTime()}-${dateRange.endDate.getTime()}`}
-                    startDate={formatDateForAPI(dateRange.startDate)}
-                    endDate={formatDateForAPI(dateRange.endDate)}
+                    startDate={formatDateForIST(dateRange.startDate)}
+                    endDate={formatDateForIST(dateRange.endDate)}
                 />
                 <ExpensesChart
                     key={`expenses-chart-${refreshKey}-${dateRange.startDate.getTime()}-${dateRange.endDate.getTime()}`}
-                    startDate={formatDateForAPI(dateRange.startDate)}
-                    endDate={formatDateForAPI(dateRange.endDate)}
+                    startDate={formatDateForIST(dateRange.startDate)}
+                    endDate={formatDateForIST(dateRange.endDate)}
                 />
             </div>
 
             <div className="mt-6">
                 <SavingsChart
                     key={`savings-chart-${refreshKey}-${dateRange.startDate.getTime()}-${dateRange.endDate.getTime()}`}
-                    startDate={formatDateForAPI(dateRange.startDate)}
-                    endDate={formatDateForAPI(dateRange.endDate)}
+                    startDate={formatDateForIST(dateRange.startDate)}
+                    endDate={formatDateForIST(dateRange.endDate)}
                 />
             </div>
 
@@ -76,8 +72,8 @@ export default function Dashboard() {
                     key={`transactions-${refreshKey}-${dateRange.startDate.getTime()}-${dateRange.endDate.getTime()}`}
                     limit={5}
                     onUpdateList={refreshData}
-                    startDate={formatDateForAPI(dateRange.startDate)}
-                    endDate={formatDateForAPI(dateRange.endDate)}
+                    startDate={formatDateForIST(dateRange.startDate)}
+                    endDate={formatDateForIST(dateRange.endDate)}
                 />
             </div>
         </div>
