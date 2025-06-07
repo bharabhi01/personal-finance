@@ -49,39 +49,50 @@ export default function DateRangePicker({ dateRange, onDateRangeChange }: DateRa
     };
 
     // Preset date ranges
-    const applyPreset = (preset: 'today' | 'week' | 'month' | 'year' | 'allTime') => {
+    const applyPreset = (preset: 'today' | 'week' | 'month' | 'lastMonth' | 'year' | 'allTime') => {
         const now = new Date(); // Current date in local time
         const istNow = toIndianTime(now); // Convert to IST
         let startDate: Date;
+        let endDate: Date;
 
         switch (preset) {
             case 'today':
                 startDate = startOfDayIST(now);
+                endDate = endOfDayIST(now);
                 break;
             case 'week':
                 // 7 days before today in IST
                 startDate = startOfDayIST(now);
                 startDate.setDate(startDate.getDate() - 7);
+                endDate = endOfDayIST(now);
                 break;
             case 'month':
                 // First day of current month in IST
                 startDate = startOfMonthIST(now);
+                endDate = endOfDayIST(now);
+                break;
+            case 'lastMonth':
+                // Calculate last month's dates in IST
+                const lastMonthDate = new Date(istNow.getFullYear(), istNow.getMonth() - 1, 1);
+                startDate = new Date(lastMonthDate.getFullYear(), lastMonthDate.getMonth(), 1, 0, 0, 0);
+                // Last day of last month
+                endDate = new Date(lastMonthDate.getFullYear(), lastMonthDate.getMonth() + 1, 0, 23, 59, 59);
                 break;
             case 'year':
                 // First day of current year in IST
                 startDate = new Date(istNow.getFullYear(), 0, 1, 0, 0, 0);
+                endDate = endOfDayIST(now);
                 break;
             case 'allTime':
                 // A date far in the past for "all time" view
                 startDate = new Date(2000, 0, 1, 0, 0, 0);
+                endDate = endOfDayIST(now);
                 break;
             default:
                 startDate = startOfDayIST(now);
+                endDate = endOfDayIST(now);
                 break;
         }
-
-        // End date is today at end of day in IST
-        const endDate = endOfDayIST(now);
 
         onDateRangeChange({
             startDate,
@@ -142,10 +153,13 @@ export default function DateRangePicker({ dateRange, onDateRangeChange }: DateRa
                                 <button onClick={() => applyPreset('month')} className="text-xs py-1 px-2 bg-gray-100 hover:bg-gray-200 rounded">
                                     This Month
                                 </button>
+                                <button onClick={() => applyPreset('lastMonth')} className="text-xs py-1 px-2 bg-gray-100 hover:bg-gray-200 rounded">
+                                    Last Month
+                                </button>
                                 <button onClick={() => applyPreset('year')} className="text-xs py-1 px-2 bg-gray-100 hover:bg-gray-200 rounded">
                                     This Year
                                 </button>
-                                <button onClick={() => applyPreset('allTime')} className="text-xs py-1 px-2 bg-gray-100 hover:bg-gray-200 rounded col-span-2">
+                                <button onClick={() => applyPreset('allTime')} className="text-xs py-1 px-2 bg-gray-100 hover:bg-gray-200 rounded">
                                     All Time
                                 </button>
                             </div>
