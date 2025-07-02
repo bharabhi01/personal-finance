@@ -10,7 +10,8 @@ import {
     startOfDayIST,
     endOfDayIST,
     startOfMonthIST,
-    formatDateForIST
+    formatDateForIST,
+    formatDatePicker
 } from '@/lib/utils';
 
 interface DateRangePickerProps {
@@ -117,19 +118,11 @@ export default function DateRangePicker({ dateRange, onDateRangeChange }: DateRa
     };
 
     const formatDateRange = () => {
-        const start = format(toIndianTime(dateRange.startDate), 'dd MMM');
-        const end = format(toIndianTime(dateRange.endDate), 'dd MMM yyyy');
+        const start = formatDatePicker(toIndianTime(dateRange.startDate));
+        const end = formatDatePicker(toIndianTime(dateRange.endDate));
 
-        // Check if same month and year
-        const startDate = toIndianTime(dateRange.startDate);
-        const endDate = toIndianTime(dateRange.endDate);
-
-        if (startDate.getMonth() === endDate.getMonth() &&
-            startDate.getFullYear() === endDate.getFullYear()) {
-            if (startDate.getDate() === endDate.getDate()) {
-                return format(endDate, 'dd MMM yyyy');
-            }
-            return `${startDate.getDate()}-${end}`;
+        if (start === end) {
+            return start;
         }
 
         return `${start} - ${end}`;
@@ -199,7 +192,7 @@ export default function DateRangePicker({ dateRange, onDateRangeChange }: DateRa
                                     <h4 className="text-sm font-medium text-gray-300 mb-3">Custom Range</h4>
                                     <div className="grid grid-cols-2 gap-3">
                                         <div>
-                                            <label className="block text-xs text-gray-400 mb-1">Start</label>
+                                            <label className="block text-xs text-gray-400 mb-1">Start (MM/DD/YYYY)</label>
                                             <input
                                                 type="date"
                                                 className="w-full bg-gray-800/50 border border-gray-600/50 rounded-lg px-3 py-2 text-white text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors [color-scheme:dark]"
@@ -210,7 +203,7 @@ export default function DateRangePicker({ dateRange, onDateRangeChange }: DateRa
                                         </div>
 
                                         <div>
-                                            <label className="block text-xs text-gray-400 mb-1">End</label>
+                                            <label className="block text-xs text-gray-400 mb-1">End (MM/DD/YYYY)</label>
                                             <input
                                                 type="date"
                                                 className="w-full bg-gray-800/50 border border-gray-600/50 rounded-lg px-3 py-2 text-white text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors [color-scheme:dark]"

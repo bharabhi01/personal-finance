@@ -209,7 +209,6 @@ export default function RegisterPage() {
                                 transition={{ duration: 0.6, delay: 0.6 }}
                             >
                                 <h2 className="text-3xl font-bold text-white mb-2">Create Your Account</h2>
-                                <p className="text-gray-400">Join thousands managing their finances smarter</p>
                             </motion.div>
 
                             {/* Error Message */}
@@ -260,7 +259,7 @@ export default function RegisterPage() {
                                                 required
                                                 value={firstName}
                                                 onChange={(e) => setFirstName(e.target.value)}
-                                                className="w-full pl-10 pr-3 py-2.5 bg-navbar-hover border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                                className="w-full pl-10 pr-3 py-2.5 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                                                 placeholder="John"
                                             />
                                         </div>
@@ -277,7 +276,7 @@ export default function RegisterPage() {
                                                 required
                                                 value={lastName}
                                                 onChange={(e) => setLastName(e.target.value)}
-                                                className="w-full pl-10 pr-3 py-2.5 bg-navbar-hover border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                                className="w-full pl-10 pr-3 py-2.5 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                                                 placeholder="Doe"
                                             />
                                         </div>
@@ -302,7 +301,7 @@ export default function RegisterPage() {
                                             required
                                             value={email}
                                             onChange={(e) => setEmail(e.target.value)}
-                                            className="w-full pl-10 pr-3 py-2.5 bg-navbar-hover border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                            className="w-full pl-10 pr-3 py-2.5 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                                             placeholder="john@example.com"
                                         />
                                     </div>
@@ -326,7 +325,7 @@ export default function RegisterPage() {
                                             required
                                             value={password}
                                             onChange={(e) => setPassword(e.target.value)}
-                                            className="w-full pl-10 pr-12 py-2.5 bg-navbar-hover border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                            className="w-full pl-10 pr-12 py-2.5 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                                             placeholder="••••••••"
                                         />
                                         <button
@@ -357,7 +356,7 @@ export default function RegisterPage() {
                                             required
                                             value={confirmPassword}
                                             onChange={(e) => setConfirmPassword(e.target.value)}
-                                            className="w-full pl-10 pr-12 py-2.5 bg-navbar-hover border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                            className="w-full pl-10 pr-12 py-2.5 border border-gray-600/50 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                                             placeholder="••••••••"
                                         />
                                         <button

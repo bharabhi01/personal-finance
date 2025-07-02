@@ -151,7 +151,7 @@ export default function TopExpensesCard({ startDate, endDate }: TopExpensesCardP
                                     <div className="flex items-center gap-4 text-sm text-gray-400">
                                         <div className="flex items-center gap-1">
                                             <Calendar className="h-3 w-3" />
-                                            <span>{format(new Date(expense.date), 'MMM d, yyyy')}</span>
+                                            <span>{format(new Date(expense.date), 'do MMMM yyyy')}</span>
                                         </div>
 
                                         {expense.tags.length > 0 && (

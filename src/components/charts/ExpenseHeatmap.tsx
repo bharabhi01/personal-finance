@@ -303,7 +303,7 @@ export default function ExpenseHeatmap({ startDate, endDate }: ExpenseHeatmapPro
                     }}
                 >
                     <div className="text-sm font-medium">
-                        {format(hoveredDay.date, 'MMM d, yyyy')}
+                        {format(hoveredDay.date, 'do MMMM yyyy')}
                     </div>
                     <div className="text-xs text-gray-300">
                         ₹{hoveredDay.amount.toLocaleString()} spent

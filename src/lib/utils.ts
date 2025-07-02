@@ -16,7 +16,17 @@ export function formatCurrency(amount: number): string {
 
 export function formatDate(date: string | Date): string {
     const dateObj = typeof date === 'string' ? parseISO(date) : date;
-    return format(dateObj, 'MMM dd, yyyy');
+    return format(dateObj, 'do MMMM yyyy');
+}
+
+export function formatDateDisplay(date: string | Date): string {
+    const dateObj = typeof date === 'string' ? parseISO(date) : date;
+    return format(dateObj, 'do MMMM yyyy');
+}
+
+export function formatDatePicker(date: string | Date): string {
+    const dateObj = typeof date === 'string' ? parseISO(date) : date;
+    return format(dateObj, 'dd/MM/yyyy');
 }
 
 export function calculateSavings(
