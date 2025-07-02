@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Search } from 'lucide-react';
+import { SearchIcon, XIcon } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 interface SearchBarProps {
     onSearch: (query: string) => void;
@@ -11,7 +12,7 @@ interface SearchBarProps {
 
 export default function SearchBar({
     onSearch,
-    placeholder = 'Search by source...',
+    placeholder = 'Search transactions...',
     className = ''
 }: SearchBarProps) {
     const [searchTerm, setSearchTerm] = useState('');
@@ -30,25 +31,28 @@ export default function SearchBar({
     return (
         <div className={`relative ${className}`}>
             <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                <Search size={18} className="text-gray-400" />
+                <SearchIcon className="h-4 w-4 text-gray-400" />
             </div>
             <input
                 type="text"
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="bg-white w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full pl-10 pr-10 py-2 bg-navbar-hover border border-gray-600/50 rounded-lg text-white text-sm placeholder-gray-400 focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
                 placeholder={placeholder}
             />
             {searchTerm && (
-                <button
-                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+                <motion.button
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.8 }}
+                    className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-white transition-colors"
                     onClick={() => {
                         setSearchTerm('');
                         onSearch('');
                     }}
                 >
-                    <span className="text-xl font-medium">×</span>
-                </button>
+                    <XIcon className="h-4 w-4" />
+                </motion.button>
             )}
         </div>
     );
