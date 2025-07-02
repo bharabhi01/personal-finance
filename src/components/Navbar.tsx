@@ -128,7 +128,7 @@ export default function Navbar() {
                         >
                             <motion.button
                                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                                className="flex items-center space-x-2 px-3 py-2 bg-navbar-hover rounded-lg border border-gray-600/50 hover:bg-gray-700/50 transition-colors"
+                                className="flex items-center space-x-2 px-3 py-2 hover:bg-navbar-hover rounded-lg transition-colors"
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
                             >
