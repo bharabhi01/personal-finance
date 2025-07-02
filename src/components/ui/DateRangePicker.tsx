@@ -202,7 +202,7 @@ export default function DateRangePicker({ dateRange, onDateRangeChange }: DateRa
                                             <label className="block text-xs text-gray-400 mb-1">Start</label>
                                             <input
                                                 type="date"
-                                                className="w-full bg-gray-800/50 border border-gray-600/50 rounded-lg px-3 py-2 text-white text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                                                className="w-full bg-gray-800/50 border border-gray-600/50 rounded-lg px-3 py-2 text-white text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors [color-scheme:dark]"
                                                 value={formatDateForIST(dateRange.startDate)}
                                                 onChange={handleStartDateChange}
                                                 max={formatDateForIST(dateRange.endDate)}
@@ -213,7 +213,7 @@ export default function DateRangePicker({ dateRange, onDateRangeChange }: DateRa
                                             <label className="block text-xs text-gray-400 mb-1">End</label>
                                             <input
                                                 type="date"
-                                                className="w-full bg-gray-800/50 border border-gray-600/50 rounded-lg px-3 py-2 text-white text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                                                className="w-full bg-gray-800/50 border border-gray-600/50 rounded-lg px-3 py-2 text-white text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors [color-scheme:dark]"
                                                 value={formatDateForIST(dateRange.endDate)}
                                                 onChange={handleEndDateChange}
                                                 min={formatDateForIST(dateRange.startDate)}

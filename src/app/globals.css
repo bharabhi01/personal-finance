@@ -68,4 +68,8 @@ body {
   .border-navbar-stroke {
     border-color: rgba(255, 255, 255, 0.26);
   }
+
+  .border-form-stroke {
+    border-color: rgba(193, 184, 184, 0.36);
+  }
 }
