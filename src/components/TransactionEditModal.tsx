@@ -123,7 +123,7 @@ export default function TransactionEditModal({
                         initial={{ scale: 0.8, opacity: 0, y: 50 }}
                         animate={{ scale: 1, opacity: 1, y: 0 }}
                         exit={{ scale: 0.8, opacity: 0, y: 50 }}
-                        transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] }}
+                        transition={{ duration: 0.3, ease: [0.25, 0.46, 0.45, 0.94] as const }}
                         onClick={(e) => e.stopPropagation()}
                     >
                         <motion.div

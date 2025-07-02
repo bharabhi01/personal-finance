@@ -1,7 +1,7 @@
 'use client';
 
 import { useAuth } from '@/context/AuthContext';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { useEffect } from 'react';
 import Navbar from '@/components/Navbar';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -13,6 +13,7 @@ export default function ProtectedLayout({
 }) {
     const { user, loading } = useAuth();
     const router = useRouter();
+    const pathname = usePathname();
 
     useEffect(() => {
         if (!loading && !user) {
@@ -46,18 +47,18 @@ export default function ProtectedLayout({
                 exit={{ opacity: 0, y: -20 }}
                 transition={{
                     duration: 0.5,
-                    ease: [0.25, 0.46, 0.45, 0.94]
+                    ease: [0.25, 0.46, 0.45, 0.94] as const
                 }}
             >
                 <AnimatePresence mode="wait">
                     <motion.div
-                        key={router.pathname}
+                        key={pathname}
                         initial={{ opacity: 0, x: 20 }}
                         animate={{ opacity: 1, x: 0 }}
                         exit={{ opacity: 0, x: -20 }}
                         transition={{
                             duration: 0.3,
-                            ease: [0.25, 0.46, 0.45, 0.94]
+                            ease: [0.25, 0.46, 0.45, 0.94] as const
                         }}
                     >
                         {children}
