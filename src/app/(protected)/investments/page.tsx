@@ -2,11 +2,13 @@
 
 import { useState } from 'react';
 import TransactionList from '@/components/TransactionList';
+import TrendChart from '@/components/charts/TrendChart';
 import SearchBar from '@/components/SearchBar';
 import TagFilter from '@/components/TagFilter';
 import DateRangePicker from '@/components/ui/DateRangePicker';
 import { DateRange } from '@/types';
 import { formatDateForIST, startOfMonthIST } from '@/lib/utils';
+import { motion } from 'framer-motion';
 
 export default function InvestmentsPage() {
     const [refreshKey, setRefreshKey] = useState(0);
@@ -27,32 +29,116 @@ export default function InvestmentsPage() {
         setRefreshKey(prev => prev + 1);
     };
 
+    const containerVariants = {
+        hidden: { opacity: 0 },
+        visible: {
+            opacity: 1,
+            transition: {
+                staggerChildren: 0.1,
+                delayChildren: 0.2
+            }
+        }
+    };
+
+    const itemVariants = {
+        hidden: { opacity: 0, y: 30 },
+        visible: {
+            opacity: 1,
+            y: 0,
+            transition: {
+                duration: 0.6,
+                ease: [0.25, 0.46, 0.45, 0.94]
+            }
+        }
+    };
+
     return (
-        <div>
-            <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold">Investments</h1>
+        <motion.div
+            className="space-y-6"
+            variants={containerVariants}
+            initial="hidden"
+            animate="visible"
+        >
+            {/* Header */}
+            <motion.div
+                className="flex justify-between items-center"
+                variants={itemVariants}
+            >
+                <h1 className="text-2xl font-bold text-white"></h1>
                 <DateRangePicker
                     dateRange={dateRange}
                     onDateRangeChange={setDateRange}
                 />
-            </div>
+            </motion.div>
 
-            <div className="mt-6">
-                <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-semibold">Investment History</h2>
-                    <div className="w-64">
-                        <SearchBar onSearch={setSearchQuery} placeholder="Search investments..." />
-                    </div>
-                </div>
+            {/* Investments Trend Chart */}
+            <motion.div
+                variants={itemVariants}
+                initial={{ opacity: 0, x: -50 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.6, delay: 0.6 }}
+            >
+                <TrendChart
+                    key={`investments-trend-chart-${refreshKey}-${dateRange.startDate.getTime()}-${dateRange.endDate.getTime()}`}
+                    startDate={formatDateForIST(dateRange.startDate)}
+                    endDate={formatDateForIST(dateRange.endDate)}
+                    investmentsOnly={true}
+                />
+            </motion.div>
 
-                <div className="mb-4">
-                    <TagFilter
-                        onTagsChange={setSelectedTags}
-                        transactionType="investment"
-                        key={`tag-filter-${refreshKey}`}
-                    />
-                </div>
+            {/* Investments History Table Card */}
+            <motion.div
+                variants={itemVariants}
+                className="bg-gradient-transactions p-6 rounded-lg shadow-lg"
+            >
+                {/* Controls Header */}
+                <motion.div
+                    className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4 mb-6"
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.3 }}
+                >
+                    <motion.h2
+                        className="text-xl font-semibold text-white"
+                        initial={{ opacity: 0, x: -30 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.5, delay: 0.4 }}
+                    >
+                        Investment History
+                    </motion.h2>
 
+                    {/* Search and Filters - Horizontal Layout */}
+                    <motion.div
+                        className="flex flex-col md:flex-row items-stretch md:items-center justify-between md:justify-end gap-4 w-full lg:w-auto"
+                        initial={{ opacity: 0, x: 30 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ duration: 0.5, delay: 0.5 }}
+                    >
+                        {/* Search Bar */}
+                        <div className="flex-1 md:flex-initial md:order-1 lg:mr-auto">
+                            <SearchBar
+                                onSearch={setSearchQuery}
+                                placeholder="Search investments..."
+                                className="w-full max-w-lg"
+                            />
+                        </div>
+
+                        {/* Filters - Rightmost side */}
+                        <div className="flex items-center gap-3 flex-shrink-0 md:order-2">
+                            <TagFilter
+                                onTagsChange={setSelectedTags}
+                                transactionType="investment"
+                                key={`tag-filter-${refreshKey}`}
+                            />
+                            <DateRangePicker
+                                dateRange={dateRange}
+                                onDateRangeChange={setDateRange}
+                            />
+                        </div>
+                    </motion.div>
+                </motion.div>
+
+                {/* Transaction List */}
                 <TransactionList
                     key={`investments-list-${refreshKey}-${dateRange.startDate.getTime()}-${dateRange.endDate.getTime()}`}
                     type="investment"
@@ -62,7 +148,7 @@ export default function InvestmentsPage() {
                     searchQuery={searchQuery}
                     tagFilters={selectedTags}
                 />
-            </div>
-        </div>
+            </motion.div>
+        </motion.div>
     );
 } 

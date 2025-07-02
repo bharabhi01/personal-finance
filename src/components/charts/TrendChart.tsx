@@ -34,6 +34,7 @@ interface TrendChartProps {
     endDate?: string;
     expenseOnly?: boolean;
     incomeOnly?: boolean;
+    investmentsOnly?: boolean;
 }
 
 type DataType = 'income' | 'expenses' | 'savings' | 'investments';
@@ -61,10 +62,10 @@ const dataTypeConfig = {
     },
 };
 
-export default function TrendChart({ startDate, endDate, expenseOnly = false, incomeOnly = false }: TrendChartProps) {
+export default function TrendChart({ startDate, endDate, expenseOnly = false, incomeOnly = false, investmentsOnly = false }: TrendChartProps) {
     const { user } = useAuth();
     const [selectedType, setSelectedType] = useState<DataType>(
-        expenseOnly ? 'expenses' : incomeOnly ? 'income' : 'income'
+        expenseOnly ? 'expenses' : incomeOnly ? 'income' : investmentsOnly ? 'investments' : 'income'
     );
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
@@ -237,12 +238,12 @@ export default function TrendChart({ startDate, endDate, expenseOnly = false, in
         <div className="border border-card-stroke p-6 rounded-lg shadow-sm">
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-lg font-semibold text-white">
-                    {expenseOnly ? 'Expense Trends' : incomeOnly ? 'Income Trends' : 'Trends'}
+                    {expenseOnly ? 'Expense Trends' : incomeOnly ? 'Income Trends' : investmentsOnly ? 'Investment Trends' : 'Trends'}
                 </h2>
 
                 <div className="flex items-center space-x-4">
-                    {/* Data Type Selector - only show if not expense-only or income-only */}
-                    {!expenseOnly && !incomeOnly && (
+                    {/* Data Type Selector - only show if not expense-only, income-only, or investments-only */}
+                    {!expenseOnly && !incomeOnly && !investmentsOnly && (
                         <div className="relative" ref={dropdownRef}>
                             <motion.button
                                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
