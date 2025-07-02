@@ -1,9 +1,19 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Sofia_Sans_Semi_Condensed, Varela_Round } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 
-const inter = Inter({ subsets: ["latin"] });
+const sofiaSans = Sofia_Sans_Semi_Condensed({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-sofia-sans"
+});
+
+const varelaRound = Varela_Round({
+  subsets: ["latin"],
+  weight: ["400"],
+  variable: "--font-varela-round"
+});
 
 export const metadata: Metadata = {
   title: "Personal Finance Tracker",
@@ -17,7 +27,7 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className={`${sofiaSans.className} ${varelaRound.variable}`}>
         <AuthProvider>
           {children}
         </AuthProvider>

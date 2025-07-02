@@ -8,6 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 import { addTransaction } from '@/lib/database';
 import { TransactionType } from '@/types';
 import TagSelector from './TagSelector';
+import { motion, AnimatePresence } from 'framer-motion';
 
 const transactionSchema = z.object({
     amount: z.coerce.number().positive('Amount must be positive'),
@@ -105,59 +106,86 @@ export default function TransactionForm({ onTransactionAdded }: TransactionFormP
     };
 
     return (
-        <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-            <h2 className="text-xl font-semibold mb-4">Add New Transaction</h2>
+        <motion.div
+            className="bg-white rounded-lg shadow-md p-6 mb-6"
+            initial={{ opacity: 0, y: 50 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: [0.25, 0.46, 0.45, 0.94] }}
+        >
+            <motion.h2
+                className="text-xl font-semibold mb-4"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: 0.2 }}
+            >
+                Add New Transaction
+            </motion.h2>
 
-            {error && (
-                <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">
-                    {error}
-                </div>
-            )}
+            <AnimatePresence>
+                {error && (
+                    <motion.div
+                        className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4"
+                        initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                        transition={{ duration: 0.3 }}
+                    >
+                        {error}
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
-            {success && (
-                <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4">
-                    Transaction added successfully!
-                </div>
-            )}
+            <AnimatePresence>
+                {success && (
+                    <motion.div
+                        className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-4"
+                        initial={{ opacity: 0, scale: 0.95, x: -20 }}
+                        animate={{ opacity: 1, scale: 1, x: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, x: -20 }}
+                        transition={{ duration: 0.3 }}
+                    >
+                        Transaction added successfully!
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             <form onSubmit={handleSubmit(onSubmit)}>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
-                    <div>
+                    <motion.div
+                        initial={{ opacity: 0, x: -20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.3 }}
+                    >
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                             Transaction Type
                         </label>
                         <div className="flex space-x-2">
-                            <label className="inline-flex items-center">
-                                <input
-                                    type="radio"
-                                    value="expense"
-                                    {...register('type')}
-                                    className="form-radio h-4 w-4 text-blue-600"
-                                />
-                                <span className="ml-2 text-sm text-gray-700">Expense</span>
-                            </label>
-                            <label className="inline-flex items-center">
-                                <input
-                                    type="radio"
-                                    value="income"
-                                    {...register('type')}
-                                    className="form-radio h-4 w-4 text-green-600"
-                                />
-                                <span className="ml-2 text-sm text-gray-700">Income</span>
-                            </label>
-                            <label className="inline-flex items-center">
-                                <input
-                                    type="radio"
-                                    value="investment"
-                                    {...register('type')}
-                                    className="form-radio h-4 w-4 text-purple-600"
-                                />
-                                <span className="ml-2 text-sm text-gray-700">Investment</span>
-                            </label>
+                            {['expense', 'income', 'investment'].map((type, index) => (
+                                <motion.label
+                                    key={type}
+                                    className="inline-flex items-center"
+                                    initial={{ opacity: 0, y: 10 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ delay: 0.35 + index * 0.05 }}
+                                    whileHover={{ scale: 1.05 }}
+                                >
+                                    <input
+                                        type="radio"
+                                        value={type}
+                                        {...register('type')}
+                                        className="form-radio h-4 w-4 text-blue-600"
+                                    />
+                                    <span className="ml-2 text-sm text-gray-700 capitalize">{type}</span>
+                                </motion.label>
+                            ))}
                         </div>
-                    </div>
+                    </motion.div>
 
-                    <div>
+                    <motion.div
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.4 }}
+                    >
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                             Amount
                         </label>
@@ -168,12 +196,24 @@ export default function TransactionForm({ onTransactionAdded }: TransactionFormP
                             className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                         />
                         {errors.amount && (
-                            <p className="mt-1 text-sm text-red-600">{errors.amount.message}</p>
+                            <motion.p
+                                className="mt-1 text-sm text-red-600"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                            >
+                                {errors.amount.message}
+                            </motion.p>
                         )}
-                    </div>
+                    </motion.div>
 
                     {currentType !== 'investment' ? (
-                        <div>
+                        <motion.div
+                            key="source-field"
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -20 }}
+                            transition={{ delay: 0.5 }}
+                        >
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                 Source
                             </label>
@@ -184,11 +224,23 @@ export default function TransactionForm({ onTransactionAdded }: TransactionFormP
                                 placeholder={currentType === 'income' ? 'e.g., Salary, Freelance' : 'e.g., Groceries, Rent'}
                             />
                             {errors.source && (
-                                <p className="mt-1 text-sm text-red-600">{errors.source.message}</p>
+                                <motion.p
+                                    className="mt-1 text-sm text-red-600"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                >
+                                    {errors.source.message}
+                                </motion.p>
                             )}
-                        </div>
+                        </motion.div>
                     ) : (
-                        <div>
+                        <motion.div
+                            key="investment-field"
+                            initial={{ opacity: 0, x: -20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -20 }}
+                            transition={{ delay: 0.5 }}
+                        >
                             <label className="block text-sm font-medium text-gray-700 mb-1">
                                 Investment Name
                             </label>
@@ -198,10 +250,14 @@ export default function TransactionForm({ onTransactionAdded }: TransactionFormP
                                 className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                                 placeholder="e.g., Stocks, Bonds, 401k"
                             />
-                        </div>
+                        </motion.div>
                     )}
 
-                    <div>
+                    <motion.div
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        transition={{ delay: 0.6 }}
+                    >
                         <label className="block text-sm font-medium text-gray-700 mb-1">
                             Date
                         </label>
@@ -211,39 +267,68 @@ export default function TransactionForm({ onTransactionAdded }: TransactionFormP
                             className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
                         />
                         {errors.date && (
-                            <p className="mt-1 text-sm text-red-600">{errors.date.message}</p>
+                            <motion.p
+                                className="mt-1 text-sm text-red-600"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                            >
+                                {errors.date.message}
+                            </motion.p>
                         )}
-                    </div>
-
-                    <div className="md:col-span-2">
-                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                            Tags
-                        </label>
-                        <TagSelector
-                            value={selectedTags}
-                            onChange={setSelectedTags}
-                            placeholder="Select or add tags..."
-                        />
-                    </div>
+                    </motion.div>
                 </div>
 
-                <div className="flex justify-end">
-                    <button
+                <motion.div
+                    className="mb-4"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.7 }}
+                >
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Tags
+                    </label>
+                    <TagSelector
+                        value={selectedTags}
+                        onChange={setSelectedTags}
+                        placeholder="Select or add tags..."
+                    />
+                </motion.div>
+
+                <motion.div
+                    className="flex justify-end space-x-3"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.8 }}
+                >
+                    <motion.button
                         type="button"
                         onClick={handleReset}
-                        className="mr-2 bg-gray-100 py-2 px-4 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        className="bg-gray-500 text-white py-2 px-4 rounded-md hover:bg-gray-600 transition-colors"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
                     >
                         Reset
-                    </button>
-                    <button
+                    </motion.button>
+                    <motion.button
                         type="submit"
                         disabled={isSubmitting}
-                        className="bg-blue-600 py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                        className="bg-blue-600 text-white py-2 px-4 rounded-md hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                        whileHover={{ scale: 1.05 }}
+                        whileTap={{ scale: 0.95 }}
                     >
-                        {isSubmitting ? 'Adding...' : 'Add Transaction'}
-                    </button>
-                </div>
+                        {isSubmitting ? (
+                            <motion.span
+                                animate={{ opacity: [1, 0.5, 1] }}
+                                transition={{ repeat: Infinity, duration: 1 }}
+                            >
+                                Adding...
+                            </motion.span>
+                        ) : (
+                            'Add Transaction'
+                        )}
+                    </motion.button>
+                </motion.div>
             </form>
-        </div>
+        </motion.div>
     );
 } 

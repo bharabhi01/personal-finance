@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
-import { CalendarIcon } from 'lucide-react';
+import { useState, useRef, useEffect } from 'react';
+import { CalendarIcon, ChevronDownIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import { DateRange } from '@/types';
+import { motion, AnimatePresence } from 'framer-motion';
 import {
     toIndianTime,
     startOfDayIST,
@@ -17,14 +18,36 @@ interface DateRangePickerProps {
     onDateRangeChange: (dateRange: DateRange) => void;
 }
 
+const presetOptions = [
+    { key: 'today', label: 'Today' },
+    { key: 'week', label: 'Last 7 Days' },
+    { key: 'month', label: 'This Month' },
+    { key: 'lastMonth', label: 'Last Month' },
+    { key: 'year', label: 'This Year' },
+    { key: 'allTime', label: 'All Time' },
+] as const;
+
 export default function DateRangePicker({ dateRange, onDateRangeChange }: DateRangePickerProps) {
     const [isOpen, setIsOpen] = useState(false);
+    const [activePreset, setActivePreset] = useState<string | null>(null);
+    const dropdownRef = useRef<HTMLDivElement>(null);
+
+    // Close dropdown when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event: MouseEvent) => {
+            if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+                setIsOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     const handleStartDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const dateValue = e.target.value;
         if (!dateValue) return;
 
-        // Parse the date in YYYY-MM-DD format and set it to IST
         const [year, month, day] = dateValue.split('-').map(num => parseInt(num, 10));
         const newStartDate = new Date(year, month - 1, day, 0, 0, 0);
 
@@ -32,13 +55,13 @@ export default function DateRangePicker({ dateRange, onDateRangeChange }: DateRa
             ...dateRange,
             startDate: newStartDate
         });
+        setActivePreset(null);
     };
 
     const handleEndDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const dateValue = e.target.value;
         if (!dateValue) return;
 
-        // Parse the date in YYYY-MM-DD format and set it to IST
         const [year, month, day] = dateValue.split('-').map(num => parseInt(num, 10));
         const newEndDate = new Date(year, month - 1, day, 23, 59, 59);
 
@@ -46,12 +69,12 @@ export default function DateRangePicker({ dateRange, onDateRangeChange }: DateRa
             ...dateRange,
             endDate: newEndDate
         });
+        setActivePreset(null);
     };
 
-    // Preset date ranges
     const applyPreset = (preset: 'today' | 'week' | 'month' | 'lastMonth' | 'year' | 'allTime') => {
-        const now = new Date(); // Current date in local time
-        const istNow = toIndianTime(now); // Convert to IST
+        const now = new Date();
+        const istNow = toIndianTime(now);
         let startDate: Date;
         let endDate: Date;
 
@@ -61,30 +84,24 @@ export default function DateRangePicker({ dateRange, onDateRangeChange }: DateRa
                 endDate = endOfDayIST(now);
                 break;
             case 'week':
-                // 7 days before today in IST
                 startDate = startOfDayIST(now);
                 startDate.setDate(startDate.getDate() - 7);
                 endDate = endOfDayIST(now);
                 break;
             case 'month':
-                // First day of current month in IST
                 startDate = startOfMonthIST(now);
                 endDate = endOfDayIST(now);
                 break;
             case 'lastMonth':
-                // Calculate last month's dates in IST
                 const lastMonthDate = new Date(istNow.getFullYear(), istNow.getMonth() - 1, 1);
                 startDate = new Date(lastMonthDate.getFullYear(), lastMonthDate.getMonth(), 1, 0, 0, 0);
-                // Last day of last month
                 endDate = new Date(lastMonthDate.getFullYear(), lastMonthDate.getMonth() + 1, 0, 23, 59, 59);
                 break;
             case 'year':
-                // First day of current year in IST
                 startDate = new Date(istNow.getFullYear(), 0, 1, 0, 0, 0);
                 endDate = endOfDayIST(now);
                 break;
             case 'allTime':
-                // A date far in the past for "all time" view
                 startDate = new Date(2000, 0, 1, 0, 0, 0);
                 endDate = endOfDayIST(now);
                 break;
@@ -94,94 +111,136 @@ export default function DateRangePicker({ dateRange, onDateRangeChange }: DateRa
                 break;
         }
 
-        onDateRangeChange({
-            startDate,
-            endDate
-        });
-
+        onDateRangeChange({ startDate, endDate });
+        setActivePreset(preset);
         setIsOpen(false);
     };
 
+    const formatDateRange = () => {
+        const start = format(toIndianTime(dateRange.startDate), 'dd MMM');
+        const end = format(toIndianTime(dateRange.endDate), 'dd MMM yyyy');
+
+        // Check if same month and year
+        const startDate = toIndianTime(dateRange.startDate);
+        const endDate = toIndianTime(dateRange.endDate);
+
+        if (startDate.getMonth() === endDate.getMonth() &&
+            startDate.getFullYear() === endDate.getFullYear()) {
+            if (startDate.getDate() === endDate.getDate()) {
+                return format(endDate, 'dd MMM yyyy');
+            }
+            return `${startDate.getDate()}-${end}`;
+        }
+
+        return `${start} - ${end}`;
+    };
+
     return (
-        <div className="relative">
-            <div
-                className="flex items-center justify-between p-2 border rounded-md cursor-pointer hover:bg-gray-50"
+        <div className="relative" ref={dropdownRef}>
+            <motion.div
+                className="flex items-center space-x-2 px-3 py-2 bg-navbar-hover rounded-lg border border-gray-600/50 cursor-pointer hover:bg-gray-700/50 transition-colors"
                 onClick={() => setIsOpen(!isOpen)}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                transition={{ duration: 0.2 }}
             >
-                <div className="flex items-center space-x-2">
-                    <CalendarIcon className="h-4 w-4 text-gray-500" />
-                    <span className="text-sm">
-                        {format(toIndianTime(dateRange.startDate), 'dd MMM yyyy')} - {format(toIndianTime(dateRange.endDate), 'dd MMM yyyy')}
-                    </span>
-                </div>
-            </div>
+                <CalendarIcon className="h-4 w-4 text-gray-300" />
+                <span className="text-sm text-white font-medium">
+                    {formatDateRange()}
+                </span>
+                <motion.div
+                    animate={{ rotate: isOpen ? 180 : 0 }}
+                    transition={{ duration: 0.3 }}
+                >
+                    <ChevronDownIcon className="h-4 w-4 text-gray-400" />
+                </motion.div>
+            </motion.div>
 
-            {isOpen && (
-                <div className="absolute right-0 mt-2 bg-white border rounded-md shadow-lg z-10 w-72 p-4">
-                    <div className="flex flex-col gap-4">
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Start Date</label>
-                            <input
-                                type="date"
-                                className="w-full border rounded-md p-2 text-sm"
-                                value={formatDateForIST(dateRange.startDate)}
-                                onChange={handleStartDateChange}
-                                max={formatDateForIST(dateRange.endDate)}
-                            />
-                        </div>
+            <AnimatePresence>
+                {isOpen && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                        animate={{ opacity: 1, y: 0, scale: 1 }}
+                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                        transition={{ duration: 0.2 }}
+                        className="absolute right-0 mt-2 w-72 z-50"
+                    >
+                        <div className="bg-gradient-navbar backdrop-blur-sm rounded-lg shadow-xl border border-gray-600/50 overflow-hidden">
+                            <div className="p-4">
+                                {/* Quick Presets */}
+                                <div className="mb-4">
+                                    <h4 className="text-sm font-medium text-gray-300 mb-3">Quick Select</h4>
+                                    <div className="grid grid-cols-2 gap-2">
+                                        {presetOptions.map((preset, index) => (
+                                            <motion.button
+                                                key={preset.key}
+                                                onClick={() => applyPreset(preset.key as any)}
+                                                className={`
+                                                    px-3 py-2 rounded-lg text-sm transition-colors
+                                                    ${activePreset === preset.key
+                                                        ? 'bg-blue-600/20 text-blue-400 border border-blue-500/30'
+                                                        : 'text-gray-300 hover:text-white hover:bg-navbar-hover'
+                                                    }
+                                                `}
+                                                whileHover={{ scale: 1.02 }}
+                                                whileTap={{ scale: 0.98 }}
+                                                initial={{ opacity: 0, y: 10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                transition={{ delay: index * 0.03 }}
+                                            >
+                                                {preset.label}
+                                            </motion.button>
+                                        ))}
+                                    </div>
+                                </div>
 
-                        <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">End Date</label>
-                            <input
-                                type="date"
-                                className="w-full border rounded-md p-2 text-sm"
-                                value={formatDateForIST(dateRange.endDate)}
-                                onChange={handleEndDateChange}
-                                min={formatDateForIST(dateRange.startDate)}
-                            />
-                        </div>
+                                {/* Custom Date Range */}
+                                <div className="border-t border-gray-600/50 pt-4">
+                                    <h4 className="text-sm font-medium text-gray-300 mb-3">Custom Range</h4>
+                                    <div className="grid grid-cols-2 gap-3">
+                                        <div>
+                                            <label className="block text-xs text-gray-400 mb-1">Start</label>
+                                            <input
+                                                type="date"
+                                                className="w-full bg-gray-800/50 border border-gray-600/50 rounded-lg px-3 py-2 text-white text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                                                value={formatDateForIST(dateRange.startDate)}
+                                                onChange={handleStartDateChange}
+                                                max={formatDateForIST(dateRange.endDate)}
+                                            />
+                                        </div>
 
-                        <div className="border-t pt-2">
-                            <p className="text-xs text-gray-500 mb-2">Quick Selections</p>
-                            <div className="grid grid-cols-2 gap-2">
-                                <button onClick={() => applyPreset('today')} className="text-xs py-1 px-2 bg-gray-100 hover:bg-gray-200 rounded">
-                                    Today
-                                </button>
-                                <button onClick={() => applyPreset('week')} className="text-xs py-1 px-2 bg-gray-100 hover:bg-gray-200 rounded">
-                                    Last 7 Days
-                                </button>
-                                <button onClick={() => applyPreset('month')} className="text-xs py-1 px-2 bg-gray-100 hover:bg-gray-200 rounded">
-                                    This Month
-                                </button>
-                                <button onClick={() => applyPreset('lastMonth')} className="text-xs py-1 px-2 bg-gray-100 hover:bg-gray-200 rounded">
-                                    Last Month
-                                </button>
-                                <button onClick={() => applyPreset('year')} className="text-xs py-1 px-2 bg-gray-100 hover:bg-gray-200 rounded">
-                                    This Year
-                                </button>
-                                <button onClick={() => applyPreset('allTime')} className="text-xs py-1 px-2 bg-gray-100 hover:bg-gray-200 rounded">
-                                    All Time
-                                </button>
+                                        <div>
+                                            <label className="block text-xs text-gray-400 mb-1">End</label>
+                                            <input
+                                                type="date"
+                                                className="w-full bg-gray-800/50 border border-gray-600/50 rounded-lg px-3 py-2 text-white text-sm focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-colors"
+                                                value={formatDateForIST(dateRange.endDate)}
+                                                onChange={handleEndDateChange}
+                                                min={formatDateForIST(dateRange.startDate)}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Apply Button */}
+                                <motion.div
+                                    className="pt-4 border-t border-gray-600/50 mt-4"
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ delay: 0.2 }}
+                                >
+                                    <button
+                                        onClick={() => setIsOpen(false)}
+                                        className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+                                    >
+                                        Apply
+                                    </button>
+                                </motion.div>
                             </div>
                         </div>
-
-                        <div className="flex justify-end gap-2">
-                            <button
-                                onClick={() => setIsOpen(false)}
-                                className="text-xs py-1 px-3 bg-gray-100 hover:bg-gray-200 rounded"
-                            >
-                                Cancel
-                            </button>
-                            <button
-                                onClick={() => setIsOpen(false)}
-                                className="text-xs py-1 px-3 bg-blue-600 hover:bg-blue-700 text-white rounded"
-                            >
-                                Apply
-                            </button>
-                        </div>
-                    </div>
-                </div>
-            )}
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 } 

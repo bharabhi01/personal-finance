@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { getTransactions } from '@/lib/database';
 import { X, Check, PlusCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface TagSelectorProps {
     value: string[];
@@ -122,96 +123,165 @@ export default function TagSelector({
     return (
         <div className={`relative ${className}`} ref={dropdownRef}>
             {/* Selected Tags Display */}
-            <div
+            <motion.div
                 onClick={() => setIsOpen(!isOpen)}
                 className="flex flex-wrap items-center gap-2 p-2 border border-gray-300 rounded-md focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-blue-500 cursor-pointer min-h-[42px]"
+                whileHover={{ borderColor: "#3B82F6" }}
+                transition={{ duration: 0.2 }}
             >
                 {value.length > 0 ? (
                     <div className="flex flex-wrap gap-2 flex-grow">
-                        {value.map(tag => (
-                            <span
-                                key={tag}
-                                className={`flex items-center rounded-full px-2 py-1 text-xs
-                                    ${availableTags.includes(tag)
-                                        ? 'bg-blue-100 text-blue-800'
-                                        : 'bg-green-100 text-green-800'}`}
-                            >
-                                {tag}
-                                {availableTags.includes(tag) ? null : (
-                                    <span className="ml-1 text-xs text-green-600 opacity-75">(new)</span>
-                                )}
-                                <button
-                                    onClick={(e) => handleRemoveTag(tag, e)}
-                                    className="ml-1 text-blue-500 hover:text-blue-700"
+                        <AnimatePresence>
+                            {value.map((tag, index) => (
+                                <motion.span
+                                    key={tag}
+                                    className={`flex items-center rounded-full px-2 py-1 text-xs
+                                        ${availableTags.includes(tag)
+                                            ? 'bg-blue-100 text-blue-800'
+                                            : 'bg-green-100 text-green-800'}`}
+                                    initial={{ opacity: 0, scale: 0.8, y: -10 }}
+                                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                                    exit={{ opacity: 0, scale: 0.8, y: -10 }}
+                                    transition={{
+                                        duration: 0.2,
+                                        delay: index * 0.05
+                                    }}
+                                    whileHover={{ scale: 1.05 }}
                                 >
-                                    <X size={14} />
-                                </button>
-                            </span>
-                        ))}
+                                    {tag}
+                                    {availableTags.includes(tag) ? null : (
+                                        <span className="ml-1 text-xs text-green-600 opacity-75">(new)</span>
+                                    )}
+                                    <motion.button
+                                        onClick={(e) => handleRemoveTag(tag, e)}
+                                        className="ml-1 text-blue-500 hover:text-blue-700"
+                                        whileHover={{ scale: 1.2 }}
+                                        whileTap={{ scale: 0.9 }}
+                                    >
+                                        <X size={14} />
+                                    </motion.button>
+                                </motion.span>
+                            ))}
+                        </AnimatePresence>
                     </div>
                 ) : (
                     <span className="text-gray-500 text-sm">{placeholder}</span>
                 )}
                 <div className="ml-auto">
-                    {isOpen ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                    <motion.div
+                        animate={{ rotate: isOpen ? 180 : 0 }}
+                        transition={{ duration: 0.3 }}
+                    >
+                        <ChevronDown size={16} />
+                    </motion.div>
                 </div>
-            </div>
+            </motion.div>
 
             {/* Dropdown */}
-            {isOpen && (
-                <div className="absolute z-10 mt-1 w-full bg-white rounded-md shadow-lg border border-gray-200 max-h-60 overflow-auto">
-                    {/* New Tag Input */}
-                    <div className="p-2 border-b">
-                        <div className="flex items-center">
-                            <input
-                                type="text"
-                                ref={inputRef}
-                                value={newTagInput}
-                                onChange={handleNewTagInputChange}
-                                onKeyDown={handleKeyDown}
-                                className="flex-grow border-none focus:ring-0 text-sm p-1"
-                                placeholder="Search or add new tag..."
-                                autoFocus
-                            />
-                            {isNewTag && (
-                                <button
-                                    onClick={handleAddNewTag}
-                                    disabled={!newTagInput.trim()}
-                                    className="ml-2 text-blue-600 hover:text-blue-800 disabled:text-gray-400"
-                                    title="Add new tag"
-                                >
-                                    <PlusCircle size={18} />
-                                </button>
-                            )}
-                        </div>
-                    </div>
+            <AnimatePresence>
+                {isOpen && (
+                    <motion.div
+                        className="absolute z-10 mt-1 w-full bg-white rounded-md shadow-lg border border-gray-200 max-h-60 overflow-auto"
+                        initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                        animate={{ opacity: 1, scale: 1, y: 0 }}
+                        exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                        transition={{ duration: 0.2, ease: "easeOut" }}
+                    >
+                        {/* New Tag Input */}
+                        <motion.div
+                            className="p-2 border-b"
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            transition={{ delay: 0.1 }}
+                        >
+                            <div className="flex items-center">
+                                <input
+                                    type="text"
+                                    ref={inputRef}
+                                    value={newTagInput}
+                                    onChange={handleNewTagInputChange}
+                                    onKeyDown={handleKeyDown}
+                                    className="flex-grow border-none focus:ring-0 text-sm p-1"
+                                    placeholder="Search or add new tag..."
+                                    autoFocus
+                                />
+                                {isNewTag && (
+                                    <motion.button
+                                        onClick={handleAddNewTag}
+                                        disabled={!newTagInput.trim()}
+                                        className="ml-2 text-blue-600 hover:text-blue-800 disabled:text-gray-400"
+                                        title="Add new tag"
+                                        whileHover={{ scale: 1.1 }}
+                                        whileTap={{ scale: 0.9 }}
+                                        initial={{ opacity: 0, scale: 0.8 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                    >
+                                        <PlusCircle size={18} />
+                                    </motion.button>
+                                )}
+                            </div>
+                        </motion.div>
 
-                    {/* Tag List */}
-                    {loading ? (
-                        <div className="p-2 text-sm text-gray-500">Loading tags...</div>
-                    ) : filteredAvailableTags.length > 0 ? (
-                        <ul className="py-1">
-                            {filteredAvailableTags.map(tag => (
-                                <li
-                                    key={tag}
-                                    onClick={() => handleToggleTag(tag)}
-                                    className={`px-3 py-2 flex items-center justify-between text-sm cursor-pointer hover:bg-gray-100 ${value.includes(tag) ? 'bg-blue-50' : ''
-                                        }`}
-                                >
-                                    <span>{tag}</span>
-                                    {value.includes(tag) && <Check size={16} className="text-blue-600" />}
-                                </li>
-                            ))}
-                        </ul>
-                    ) : (
-                        <div className="p-2 text-sm text-gray-500">
-                            {newTagInput.trim()
-                                ? `No matches found. Press Enter to add "${newTagInput}" as a new tag.`
-                                : 'No tags available. Add your first tag!'}
-                        </div>
-                    )}
-                </div>
-            )}
+                        {/* Tag List */}
+                        {loading ? (
+                            <motion.div
+                                className="p-2 text-sm text-gray-500"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                            >
+                                Loading tags...
+                            </motion.div>
+                        ) : filteredAvailableTags.length > 0 ? (
+                            <motion.ul
+                                className="py-1"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: 0.1 }}
+                            >
+                                {filteredAvailableTags.map((tag, index) => (
+                                    <motion.li
+                                        key={tag}
+                                        onClick={() => handleToggleTag(tag)}
+                                        className={`px-3 py-2 flex items-center justify-between text-sm cursor-pointer hover:bg-gray-100 ${value.includes(tag) ? 'bg-blue-50' : ''
+                                            }`}
+                                        initial={{ opacity: 0, x: -10 }}
+                                        animate={{ opacity: 1, x: 0 }}
+                                        transition={{
+                                            delay: index * 0.03,
+                                            duration: 0.2
+                                        }}
+                                        whileHover={{
+                                            x: 5,
+                                            transition: { duration: 0.2 }
+                                        }}
+                                    >
+                                        <span>{tag}</span>
+                                        {value.includes(tag) && (
+                                            <motion.div
+                                                initial={{ opacity: 0, scale: 0 }}
+                                                animate={{ opacity: 1, scale: 1 }}
+                                                transition={{ duration: 0.2 }}
+                                            >
+                                                <Check size={16} className="text-blue-600" />
+                                            </motion.div>
+                                        )}
+                                    </motion.li>
+                                ))}
+                            </motion.ul>
+                        ) : (
+                            <motion.div
+                                className="p-2 text-sm text-gray-500"
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                            >
+                                {newTagInput.trim()
+                                    ? `No matches found. Press Enter to add "${newTagInput}" as a new tag.`
+                                    : 'No tags available. Add your first tag!'}
+                            </motion.div>
+                        )}
+                    </motion.div>
+                )}
+            </AnimatePresence>
         </div>
     );
 } 

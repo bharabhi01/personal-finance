@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { getTransactions } from '@/lib/database';
 import { formatCurrency, calculateSavings } from '@/lib/utils';
 import { ArrowUpRight, ArrowDownRight, IndianRupee, PiggyBank } from 'lucide-react';
+import { motion, useSpring, useTransform } from 'framer-motion';
 
 interface Summary {
     income: number;
@@ -16,6 +17,18 @@ interface Summary {
 interface DashboardSummaryProps {
     startDate?: string;
     endDate?: string;
+}
+
+// Animated number component
+function AnimatedNumber({ value }: { value: number }) {
+    const spring = useSpring(value, { damping: 30, stiffness: 100 });
+    const display = useTransform(spring, (current) => Math.round(current).toLocaleString());
+
+    useEffect(() => {
+        spring.set(value);
+    }, [spring, value]);
+
+    return <motion.span>{display}</motion.span>;
 }
 
 export default function DashboardSummary({ startDate, endDate }: DashboardSummaryProps) {
@@ -93,92 +106,170 @@ export default function DashboardSummary({ startDate, endDate }: DashboardSummar
     const showPeriodSelector = !startDate && !endDate;
 
     if (loading) {
-        return <div className="h-40 flex items-center justify-center">Loading summary...</div>;
+        return (
+            <div className="h-40 flex items-center justify-center">
+                <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                    className="w-8 h-8 border-2 border-blue-500 border-t-transparent rounded-full"
+                />
+            </div>
+        );
     }
 
     if (error) {
-        return <div className="text-red-600 py-4">{error}</div>;
+        return (
+            <motion.div
+                className="text-red-600 py-4"
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ duration: 0.5 }}
+            >
+                {error}
+            </motion.div>
+        );
     }
 
+    const cardVariants = {
+        hidden: { opacity: 0, y: 50 },
+        visible: (index: number) => ({
+            opacity: 1,
+            y: 0,
+            transition: {
+                delay: index * 0.1,
+                duration: 0.6,
+                ease: [0.25, 0.46, 0.45, 0.94] as const
+            }
+        })
+    };
+
+    const summaryCards = [
+        {
+            title: "Income",
+            value: summary.income,
+            icon: ArrowUpRight,
+            iconBg: "bg-green-500/20",
+            iconColor: "text-green-400",
+        },
+        {
+            title: "Expenses",
+            value: summary.expenses,
+            icon: ArrowDownRight,
+            iconBg: "bg-red-500/20",
+            iconColor: "text-red-400",
+        },
+        {
+            title: "Savings",
+            value: summary.savings,
+            icon: PiggyBank,
+            iconBg: "bg-blue-500/20",
+            iconColor: "text-blue-400",
+        },
+        {
+            title: "Investments",
+            value: summary.investments,
+            icon: IndianRupee,
+            iconBg: "bg-purple-500/20",
+            iconColor: "text-purple-400",
+        },
+    ];
+
     return (
-        <div>
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.5 }}
+        >
             {showPeriodSelector && (
-                <div className="flex justify-between items-center mb-4">
-                    <h2 className="text-xl font-semibold">Financial Summary</h2>
+                <motion.div
+                    className="flex justify-between items-center mb-4"
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.2 }}
+                >
                     <div className="flex bg-gray-100 rounded-lg p-1">
-                        <button
+                        <motion.button
                             onClick={() => setPeriod('month')}
-                            className={`px-3 py-1 rounded-md ${period === 'month' ? 'bg-white shadow-sm' : 'text-gray-600'}`}
+                            className={`px-3 py-1 rounded-md transition-colors ${period === 'month' ? 'bg-white shadow-sm' : 'text-gray-600'
+                                }`}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
                         >
                             This Month
-                        </button>
-                        <button
+                        </motion.button>
+                        <motion.button
                             onClick={() => setPeriod('all')}
-                            className={`px-3 py-1 rounded-md ${period === 'all' ? 'bg-white shadow-sm' : 'text-gray-600'}`}
+                            className={`px-3 py-1 rounded-md transition-colors ${period === 'all' ? 'bg-white shadow-sm' : 'text-gray-600'
+                                }`}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
                         >
                             All Time
-                        </button>
+                        </motion.button>
                     </div>
-                </div>
-            )}
-
-            {!showPeriodSelector && (
-                <div className="mb-4">
-                    <h2 className="text-xl font-semibold">Financial Summary</h2>
-                </div>
+                </motion.div>
             )}
 
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <p className="text-sm text-gray-500">Income</p>
-                            <p className="text-2xl font-semibold text-green-600">{formatCurrency(summary.income)}</p>
-                        </div>
-                        <div className="rounded-full p-2 bg-green-100">
-                            <ArrowUpRight className="h-5 w-5 text-green-600" />
-                        </div>
-                    </div>
-                </div>
-
-                <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <p className="text-sm text-gray-500">Expenses</p>
-                            <p className="text-2xl font-semibold text-red-600">{formatCurrency(summary.expenses)}</p>
-                        </div>
-                        <div className="rounded-full p-2 bg-red-100">
-                            <ArrowDownRight className="h-5 w-5 text-red-600" />
-                        </div>
-                    </div>
-                </div>
-
-                <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <p className="text-sm text-gray-500">Investments</p>
-                            <p className="text-2xl font-semibold text-purple-600">{formatCurrency(summary.investments)}</p>
-                        </div>
-                        <div className="rounded-full p-2 bg-purple-100">
-                            <IndianRupee className="h-5 w-5 text-purple-600" />
-                        </div>
-                    </div>
-                </div>
-
-                <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-100">
-                    <div className="flex justify-between items-start">
-                        <div>
-                            <p className="text-sm text-gray-500">Savings</p>
-                            <p className={`text-2xl font-semibold ${summary.savings >= 0 ? 'text-blue-600' : 'text-red-600'}`}>
-                                {formatCurrency(summary.savings)}
-                            </p>
-                        </div>
-                        <div className="rounded-full p-2 bg-blue-100">
-                            <PiggyBank className="h-5 w-5 text-blue-600" />
-                        </div>
-                    </div>
-                </div>
+                {summaryCards.map((card, index) => {
+                    const Icon = card.icon;
+                    return (
+                        <motion.div
+                            key={card.title}
+                            className="bg-gradient-card p-6 rounded-xl shadow-sm"
+                            variants={cardVariants}
+                            initial="hidden"
+                            animate="visible"
+                            custom={index}
+                            whileHover={{
+                                scale: 1.05,
+                                boxShadow: "0 10px 30px rgba(0, 0, 0, 0.2)",
+                                transition: { duration: 0.3 }
+                            }}
+                            whileTap={{ scale: 0.98 }}
+                        >
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <motion.p
+                                        className="text-sm text-gradient-heading mb-1"
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        transition={{ delay: index * 0.1 + 0.3 }}
+                                    >
+                                        {card.title}
+                                    </motion.p>
+                                    <motion.p
+                                        className="text-2xl font-bold"
+                                        style={{ color: '#D5D5D5' }}
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        transition={{ delay: index * 0.1 + 0.4 }}
+                                    >
+                                        ₹<AnimatedNumber value={card.value} />
+                                    </motion.p>
+                                </div>
+                                <motion.div
+                                    className={`rounded-full p-3 ${card.iconBg}`}
+                                    whileHover={{
+                                        rotate: 360,
+                                        transition: { duration: 0.6 }
+                                    }}
+                                    initial={{ scale: 0 }}
+                                    animate={{ scale: 1 }}
+                                    transition={{
+                                        delay: index * 0.1 + 0.5,
+                                        type: "spring",
+                                        stiffness: 200,
+                                        damping: 10
+                                    }}
+                                >
+                                    <Icon className={`h-6 w-6 ${card.iconColor}`} />
+                                </motion.div>
+                            </div>
+                        </motion.div>
+                    );
+                })}
             </div>
-        </div>
+        </motion.div>
     );
 } 

@@ -24,3 +24,48 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  .bg-gradient-dark {
+    background: linear-gradient(135deg, #171717 0%, #151515 100%);
+  }
+
+  .bg-gradient-card {
+    background: linear-gradient(0deg, rgba(0, 0, 0, 0.32) 0%, rgba(67, 67, 67, 0.32) 100%);
+  }
+
+  .bg-gradient-transactions {
+    background: linear-gradient(0deg, rgba(0, 0, 0, 0.32) 0%, rgba(67, 67, 67, 0.32) 100%);
+  }
+
+  .bg-gradient-navbar {
+    background: linear-gradient(0deg, rgba(0, 0, 0, 0.28) 37%, rgba(67, 67, 67, 0.28) 100%);
+  }
+
+  .bg-navbar-hover {
+    background: color-mix(in oklab, oklch(0.23 0.01 257.32) 80%, transparent);
+  }
+
+  .font-varela-round {
+    font-family: var(--font-varela-round);
+  }
+
+  .text-gradient-heading {
+    background: linear-gradient(135deg, #FFFAFA 0%, #BDB6B6 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .border-card-stroke {
+    border-color: rgba(193, 184, 184, 0.26);
+  }
+
+  .border-navbar-stroke {
+    border-color: rgba(255, 255, 255, 0.26);
+  }
+}

@@ -4,6 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import Navbar from '@/components/Navbar';
+import { motion, AnimatePresence } from 'framer-motion';
 
 export default function ProtectedLayout({
     children,
@@ -22,7 +23,11 @@ export default function ProtectedLayout({
     if (loading) {
         return (
             <div className="flex items-center justify-center min-h-screen">
-                <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+                <motion.div
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                    className="w-12 h-12 border-2 border-blue-500 border-t-transparent rounded-full"
+                />
             </div>
         );
     }
@@ -32,11 +37,33 @@ export default function ProtectedLayout({
     }
 
     return (
-        <div className="flex h-screen bg-gray-50">
+        <div className="min-h-screen bg-gradient-dark">
             <Navbar />
-            <main className="flex-1 ml-64 p-6 overflow-y-auto">
-                {children}
-            </main>
+            <motion.main
+                className="p-6"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                transition={{
+                    duration: 0.5,
+                    ease: [0.25, 0.46, 0.45, 0.94]
+                }}
+            >
+                <AnimatePresence mode="wait">
+                    <motion.div
+                        key={router.pathname}
+                        initial={{ opacity: 0, x: 20 }}
+                        animate={{ opacity: 1, x: 0 }}
+                        exit={{ opacity: 0, x: -20 }}
+                        transition={{
+                            duration: 0.3,
+                            ease: [0.25, 0.46, 0.45, 0.94]
+                        }}
+                    >
+                        {children}
+                    </motion.div>
+                </AnimatePresence>
+            </motion.main>
         </div>
     );
 } 
