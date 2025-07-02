@@ -33,6 +33,7 @@ interface TrendChartProps {
     startDate?: string;
     endDate?: string;
     expenseOnly?: boolean;
+    incomeOnly?: boolean;
 }
 
 type DataType = 'income' | 'expenses' | 'savings' | 'investments';
@@ -60,9 +61,11 @@ const dataTypeConfig = {
     },
 };
 
-export default function TrendChart({ startDate, endDate, expenseOnly = false }: TrendChartProps) {
+export default function TrendChart({ startDate, endDate, expenseOnly = false, incomeOnly = false }: TrendChartProps) {
     const { user } = useAuth();
-    const [selectedType, setSelectedType] = useState<DataType>(expenseOnly ? 'expenses' : 'income');
+    const [selectedType, setSelectedType] = useState<DataType>(
+        expenseOnly ? 'expenses' : incomeOnly ? 'income' : 'income'
+    );
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement>(null);
     const [chartData, setChartData] = useState<{
@@ -234,12 +237,12 @@ export default function TrendChart({ startDate, endDate, expenseOnly = false }: 
         <div className="border border-card-stroke p-6 rounded-lg shadow-sm">
             <div className="flex justify-between items-center mb-6">
                 <h2 className="text-lg font-semibold text-white">
-                    {expenseOnly ? 'Expense Trends' : 'Trends'}
+                    {expenseOnly ? 'Expense Trends' : incomeOnly ? 'Income Trends' : 'Trends'}
                 </h2>
 
                 <div className="flex items-center space-x-4">
-                    {/* Data Type Selector - only show if not expense-only */}
-                    {!expenseOnly && (
+                    {/* Data Type Selector - only show if not expense-only or income-only */}
+                    {!expenseOnly && !incomeOnly && (
                         <div className="relative" ref={dropdownRef}>
                             <motion.button
                                 onClick={() => setIsDropdownOpen(!isDropdownOpen)}
