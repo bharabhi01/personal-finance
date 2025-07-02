@@ -21,6 +21,7 @@ ChartJS.register(ArcElement, Tooltip, Legend);
 interface BreakdownChartProps {
     startDate?: string;
     endDate?: string;
+    expenseOnly?: boolean;
 }
 
 type DataType = 'income' | 'expenses' | 'savings' | 'investments';
@@ -59,7 +60,7 @@ const dataTypeConfig = {
     },
 };
 
-export default function BreakdownChart({ startDate, endDate }: BreakdownChartProps) {
+export default function BreakdownChart({ startDate, endDate, expenseOnly = false }: BreakdownChartProps) {
     const { user } = useAuth();
     const [selectedType, setSelectedType] = useState<DataType>('expenses');
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -266,59 +267,63 @@ export default function BreakdownChart({ startDate, endDate }: BreakdownChartPro
     return (
         <div className="border border-card-stroke p-6 rounded-lg shadow-sm">
             <div className="flex justify-between items-center mb-6">
-                <h2 className="text-lg font-semibold text-white">Breakdown</h2>
+                <h2 className="text-lg font-semibold text-white">
+                    {expenseOnly ? 'Expense Breakdown' : 'Breakdown'}
+                </h2>
 
-                <div className="relative" ref={dropdownRef}>
-                    <motion.button
-                        onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                        className="flex items-center space-x-2 px-3 py-2 bg-navbar-hover rounded-lg border border-gray-600/50 hover:bg-gray-700/50 transition-colors"
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
-                    >
-                        <span className="text-sm font-medium text-white">
-                            {dataTypeConfig[selectedType].label}
-                        </span>
-                        <motion.div
-                            animate={{ rotate: isDropdownOpen ? 180 : 0 }}
-                            transition={{ duration: 0.3 }}
+                {!expenseOnly && (
+                    <div className="relative" ref={dropdownRef}>
+                        <motion.button
+                            onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                            className="flex items-center space-x-2 px-3 py-2 bg-navbar-hover rounded-lg border border-gray-600/50 hover:bg-gray-700/50 transition-colors"
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
                         >
-                            <ChevronDown className="h-4 w-4 text-gray-400" />
-                        </motion.div>
-                    </motion.button>
-
-                    <AnimatePresence>
-                        {isDropdownOpen && (
+                            <span className="text-sm font-medium text-white">
+                                {dataTypeConfig[selectedType].label}
+                            </span>
                             <motion.div
-                                initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                                transition={{ duration: 0.2 }}
-                                className="absolute right-0 mt-2 w-40 bg-gradient-navbar backdrop-blur-sm rounded-lg shadow-xl border border-gray-600/50 z-10 overflow-hidden"
+                                animate={{ rotate: isDropdownOpen ? 180 : 0 }}
+                                transition={{ duration: 0.3 }}
                             >
-                                {Object.entries(dataTypeConfig).map(([type, config], index) => (
-                                    <motion.button
-                                        key={type}
-                                        onClick={() => {
-                                            setSelectedType(type as DataType);
-                                            setIsDropdownOpen(false);
-                                        }}
-                                        className={`w-full text-left px-3 py-2 text-sm transition-colors ${selectedType === type
-                                            ? 'bg-blue-600/20 text-blue-400 border-l-2 border-blue-500'
-                                            : 'text-gray-300 hover:text-white hover:bg-navbar-hover'
-                                            }`}
-                                        whileHover={{ scale: 1.02 }}
-                                        whileTap={{ scale: 0.98 }}
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: index * 0.03 }}
-                                    >
-                                        {config.label}
-                                    </motion.button>
-                                ))}
+                                <ChevronDown className="h-4 w-4 text-gray-400" />
                             </motion.div>
-                        )}
-                    </AnimatePresence>
-                </div>
+                        </motion.button>
+
+                        <AnimatePresence>
+                            {isDropdownOpen && (
+                                <motion.div
+                                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                                    transition={{ duration: 0.2 }}
+                                    className="absolute right-0 mt-2 w-40 bg-gradient-navbar backdrop-blur-sm rounded-lg shadow-xl border border-gray-600/50 z-10 overflow-hidden"
+                                >
+                                    {Object.entries(dataTypeConfig).map(([type, config], index) => (
+                                        <motion.button
+                                            key={type}
+                                            onClick={() => {
+                                                setSelectedType(type as DataType);
+                                                setIsDropdownOpen(false);
+                                            }}
+                                            className={`w-full text-left px-3 py-2 text-sm transition-colors ${selectedType === type
+                                                ? 'bg-blue-600/20 text-blue-400 border-l-2 border-blue-500'
+                                                : 'text-gray-300 hover:text-white hover:bg-navbar-hover'
+                                                }`}
+                                            whileHover={{ scale: 1.02 }}
+                                            whileTap={{ scale: 0.98 }}
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: index * 0.03 }}
+                                        >
+                                            {config.label}
+                                        </motion.button>
+                                    ))}
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+                )}
             </div>
 
             <div className="h-72">

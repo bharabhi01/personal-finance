@@ -59,11 +59,6 @@ export default function TransactionsPage() {
             initial="hidden"
             animate="visible"
         >
-            {/* Header */}
-            <motion.div variants={itemVariants}>
-                <h1 className="text-2xl font-bold text-white">Transactions</h1>
-            </motion.div>
-
             {/* Transaction Form */}
             <motion.div variants={itemVariants}>
                 <TransactionForm onTransactionAdded={refreshData} />
