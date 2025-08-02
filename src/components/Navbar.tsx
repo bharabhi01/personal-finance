@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
-import { LayoutDashboard, IndianRupee, LineChart, LogOut, PiggyBank, CreditCard, ChevronDown } from 'lucide-react';
+import { LayoutDashboard, IndianRupee, LineChart, LogOut, PiggyBank, CreditCard, ChevronDown, Target } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -33,6 +33,11 @@ const navItems = [
         label: 'Investments',
         href: '/investments',
         icon: LineChart,
+    },
+    {
+        label: 'Budget',
+        href: '/budget',
+        icon: Target,
     },
 ];
 

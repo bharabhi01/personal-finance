@@ -10,6 +10,8 @@ import { useAuth } from '@/context/AuthContext';
 import { DateRange } from '@/types';
 import { formatDateForIST, startOfMonthIST } from '@/lib/utils';
 import { motion } from 'framer-motion';
+import BudgetAlert from '@/components/BudgetAlert';
+import BudgetManager from '@/components/BudgetManager';
 
 export default function Dashboard() {
     const { user } = useAuth();
@@ -90,6 +92,13 @@ export default function Dashboard() {
                 </motion.div>
             </motion.div>
 
+            {/* Budget Alert */}
+            <motion.div variants={itemVariants}>
+                <BudgetAlert
+                    month={new Date().toISOString().slice(0, 7)}
+                />
+            </motion.div>
+
             {/* Summary Cards */}
             <motion.div variants={itemVariants}>
                 <DashboardSummary
@@ -99,9 +108,9 @@ export default function Dashboard() {
                 />
             </motion.div>
 
-            {/* Charts Section */}
+            {/* Charts and Budget Section */}
             <motion.div
-                className="grid grid-cols-1 lg:grid-cols-2 gap-6"
+                className="grid grid-cols-1 lg:grid-cols-3 gap-6"
                 variants={itemVariants}
             >
                 <motion.div
@@ -124,6 +133,17 @@ export default function Dashboard() {
                         key={`breakdown-chart-${refreshKey}-${dateRange.startDate.getTime()}-${dateRange.endDate.getTime()}`}
                         startDate={formatDateForIST(dateRange.startDate)}
                         endDate={formatDateForIST(dateRange.endDate)}
+                    />
+                </motion.div>
+                <motion.div
+                    initial={{ opacity: 0, y: 50 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.8 }}
+                >
+                    <BudgetManager
+                        compact={true}
+                        month={new Date().toISOString().slice(0, 7)}
+                        onBudgetUpdate={refreshData}
                     />
                 </motion.div>
             </motion.div>

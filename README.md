@@ -8,6 +8,7 @@ A comprehensive personal finance application built with Next.js and Supabase, de
 - **Expense Tracking**: Add, categorize, and analyze your expenses
 - **Income Management**: Track income from various sources
 - **Investment Tracking**: Monitor your investments
+- **Budget Management**: Set monthly spending limits with alerts and tracking
 - **Data Visualization**: Visual charts for income, expenses, and savings
 - **Authentication**: Secure user authentication with Supabase
 - **Responsive Design**: Works on desktop, tablet, and mobile devices
@@ -74,6 +75,14 @@ In your Supabase project, create the following tables:
 - user_id (uuid, foreign key to auth.users)
 - color (text, optional)
 - created_at (timestamptz, default: now())
+
+**budgets**
+- id (uuid, primary key)
+- user_id (uuid, foreign key to auth.users)
+- monthly_limit (numeric)
+- month (text) - Format: YYYY-MM
+- created_at (timestamptz, default: now())
+- updated_at (timestamptz, default: now())
 
 5. Run the development server
 

@@ -2,9 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { getTransactions } from '@/lib/database';
+import { getTransactions, getBudgetStatus, getMonthlyIncomeTotal } from '@/lib/database';
 import { formatCurrency, calculateSavings } from '@/lib/utils';
-import { ArrowUpRight, ArrowDownRight, IndianRupee, PiggyBank } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, IndianRupee, PiggyBank, TrendingUp, Percent } from 'lucide-react';
 import { motion, useSpring, useTransform } from 'framer-motion';
 
 interface Summary {
@@ -12,6 +12,7 @@ interface Summary {
     expenses: number;
     investments: number;
     savings: number;
+    expenseToIncomePercentage: number;
 }
 
 interface DashboardSummaryProps {
@@ -38,6 +39,7 @@ export default function DashboardSummary({ startDate, endDate }: DashboardSummar
         expenses: 0,
         investments: 0,
         savings: 0,
+        expenseToIncomePercentage: 0,
     });
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -82,12 +84,14 @@ export default function DashboardSummary({ startDate, endDate }: DashboardSummar
                     .reduce((sum, t) => sum + t.amount, 0);
 
                 const savings = calculateSavings(income, expenses, investments);
+                const expenseToIncomePercentage = income > 0 ? (expenses / income) * 100 : 0;
 
                 setSummary({
                     income,
                     expenses,
                     investments,
                     savings,
+                    expenseToIncomePercentage,
                 });
 
                 setError(null);
@@ -172,6 +176,14 @@ export default function DashboardSummary({ startDate, endDate }: DashboardSummar
             iconBg: "bg-purple-500/20",
             iconColor: "text-purple-400",
         },
+        {
+            title: "Expense %",
+            value: Math.round(summary.expenseToIncomePercentage),
+            icon: Percent,
+            iconBg: "bg-orange-500/20",
+            iconColor: "text-orange-400",
+            isPercentage: true,
+        },
     ];
 
     return (
@@ -210,7 +222,7 @@ export default function DashboardSummary({ startDate, endDate }: DashboardSummar
                 </motion.div>
             )}
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
                 {summaryCards.map((card, index) => {
                     const Icon = card.icon;
                     return (
@@ -245,7 +257,15 @@ export default function DashboardSummary({ startDate, endDate }: DashboardSummar
                                         animate={{ opacity: 1 }}
                                         transition={{ delay: index * 0.1 + 0.4 }}
                                     >
-                                        ₹<AnimatedNumber value={card.value} />
+                                        {card.isPercentage ? (
+                                            <>
+                                                <AnimatedNumber value={card.value} />%
+                                            </>
+                                        ) : (
+                                            <>
+                                                ₹<AnimatedNumber value={card.value} />
+                                            </>
+                                        )}
                                     </motion.p>
                                 </div>
                                 <motion.div
