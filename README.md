@@ -1,99 +1,33 @@
-# Personal Finance Tracker
+# Expense tracker
 
-A comprehensive personal finance application built with Next.js and Supabase, designed to help you track your income, expenses, investments, and savings.
+Responsive Next.js expense app with Supabase authentication and Postgres. Supports manual add, edit, confirmed delete, filters, CSV export and reviewed chat import. The light dashboard includes a sidebar, daily spending chart and category filters, with layouts for mobile and desktop.
 
-## Features
+## Development
 
-- **Dashboard**: Overview of your financial status with key metrics
-- **Expense Tracking**: Add, categorize, and analyze your expenses
-- **Income Management**: Track income from various sources
-- **Investment Tracking**: Monitor your investments
-- **Budget Management**: Set monthly spending limits with alerts and tracking
-- **Data Visualization**: Visual charts for income, expenses, and savings
-- **Authentication**: Secure user authentication with Supabase
-- **Responsive Design**: Works on desktop, tablet, and mobile devices
+Use Node 22 or newer. Run `npm ci`, `npm test`, `npm run build`, then `npm start`. `/concept` shows interactive sample data that disappears on reload. Without database configuration, `/` shows a setup notice.
 
-## Tech Stack
+## Configuration
 
-- **Frontend**: Next.js, React, TypeScript, Tailwind CSS
-- **Backend**: Supabase (PostgreSQL, Authentication)
-- **State Management**: React Context API
-- **Form Validation**: React Hook Form, Zod
-- **Data Visualization**: Chart.js, React-Chartjs-2
-- **Icons & UI**: Lucide React
+Copy `.env.example` to a local environment file and set the project's Supabase URL and publishable key. An existing anon key is supported as an alternative. Never put a service-role key in the app or commit environment files.
 
-## Getting Started
+Optional username login uses three server-only variables: `LOGIN_ALIAS_USERNAME`, `LOGIN_ALIAS_EMAIL` and `LOGIN_ALIAS_USER_ID`. All must describe one existing authenticated identity. The alias is checked against the exact UUID and access list after password verification. Unknown usernames never generate accounts or email addresses. Do not prefix alias variables with `NEXT_PUBLIC_`.
 
-### Prerequisites
+`supabase/001_expenses.sql` is a one-time schema creation script, not an idempotent migration. Inspect the destination before applying it. Subsequent schema changes need reviewed migrations and backups. Add each permitted auth UUID to `public.allowed_users` through a trusted administrator. Public sign-up is not offered by the app.
 
-- Node.js 18.0 or later
-- npm or yarn
-- Supabase account and project
+## Security and data
 
-### Installation
+Server-verified sessions and database RLS keep each user's expenses and imports isolated. Cookie-authenticated writes require same-origin requests. `/account` changes only the currently signed-in account's password through Supabase Auth.
 
-1. Clone the repository
-```bash
-git clone <repository-url>
-cd personal-finance-app
-```
+INR amounts use integer paise. Dates are explicit expense dates. Server validation and database constraints check amounts, descriptions, dates and categories. The ledger loads all rows in stable ordered pages and suppresses partial totals on loading errors or count changes. Refresh fetches updates; there is no realtime subscription.
 
-2. Install dependencies
-```bash
-npm install
-# or
-yarn install
-```
+Reviewed chat imports use original message IDs and ordered rows. The database function saves imports and expenses atomically. Identical retries return `already_saved`, changed payloads for the same ID are rejected, and invalid rows roll back the batch. There is no automatic WhatsApp webhook. Use the authenticated review form and verify the resulting ledger before reporting a save.
 
-3. Environment Variables
+## Testing and release
 
-Create a `.env.local` file in the root directory and add your Supabase credentials:
-```
-NEXT_PUBLIC_SUPABASE_URL=your-supabase-url
-NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
-```
+`npm test` covers validation, username resolution and a PostgreSQL-compatible database suite including access isolation, deduplication, rollback and edit/delete. `node tests/ui-check.mjs` checks responsive concept behavior using local Chrome. Build and TypeScript checks run with `npm run build`.
 
-4. Supabase Setup
+Before a release, verify live login/logout, owner access, cross-session persistence, database isolation, import retries, manual changes, exports and mobile/desktop layout. Test-account data must remain separate from the real ledger. Establish a backup/export path. Preview readiness alone is not a production release.
 
-In your Supabase project, create the following tables:
+## Deployment workflow
 
-**transactions**
-- id (uuid, primary key)
-- user_id (uuid, foreign key to auth.users)
-- amount (numeric)
-- source (text)
-- tags (text[])
-- date (date)
-- type (text) - 'expense', 'income', or 'investment'
-- investment_name (text, optional)
-- created_at (timestamptz, default: now())
-- updated_at (timestamptz, default: now())
-
-**tags**
-- id (uuid, primary key)
-- name (text)
-- user_id (uuid, foreign key to auth.users)
-- color (text, optional)
-- created_at (timestamptz, default: now())
-
-**budgets**
-- id (uuid, primary key)
-- user_id (uuid, foreign key to auth.users)
-- monthly_limit (numeric)
-- month (text) - Format: YYYY-MM
-- created_at (timestamptz, default: now())
-- updated_at (timestamptz, default: now())
-
-5. Run the development server
-
-```bash
-npm run dev
-# or
-yarn dev
-```
-
-6. Open [http://localhost:3000](http://localhost:3000) in your browser
-
-## License
-
-MIT
+Git auto-deploy is disabled in `vercel.json` so publishing source does not replace the existing production deployment. Use a reviewed Vercel CLI preview and promote it after verifying login and data access. Remove this setting only when switching deliberately to Git-based deployments. Existing production environment values stay in Vercel, not in this repository.
