@@ -2,8 +2,11 @@
 import { useMemo, useState } from 'react';
 import { categories } from '@/lib/validation.mjs';
 import { money, todayIST } from '@/lib/format';
-import { categoryTotals, dailySeries, filterRows, monthOptions, periodRange, subscriptions, summarize } from '@/lib/summary';
-import type { Entry, Expense } from '@/lib/store';
+import { accountBalances, categoryTotals, dailySeries, filterRows, monthOptions, moneyFlow, periodRange, subscriptions, summarize } from '@/lib/summary';
+import type { Entry, Transaction } from '@/lib/store';
+import Activity from '@/components/Activity';
+import Balances from '@/components/Balances';
+import MoneyFlow from '@/components/MoneyFlow';
 import CategoryBreakdown from '@/components/CategoryBreakdown';
 import DailyChart from '@/components/DailyChart';
 import ExpenseForm from '@/components/ExpenseForm';
@@ -26,27 +29,35 @@ async function request(url: string, method: string, body?: Entry) {
   return result;
 }
 
-export default function Dashboard({ initial, loadError, canSignOut }: { initial: Expense[]; loadError?: string; canSignOut: boolean }) {
+export default function Dashboard({ initial, loadError, canSignOut }: { initial: Transaction[]; loadError?: string; canSignOut: boolean }) {
   const today = todayIST();
   const [entries, setEntries] = useState(initial);
   const [period, setPeriod] = useState(today.slice(0, 7));
   const [category, setCategory] = useState('All');
-  const [form, setForm] = useState<Expense | 'new' | null>(null);
-  const [deleting, setDeleting] = useState<Expense | null>(null);
+  const [form, setForm] = useState<Transaction | 'new' | null>(null);
+  const [deleting, setDeleting] = useState<Transaction | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
   const months = useMemo(() => monthOptions(today), [today]);
   const range = useMemo(() => periodRange(period, today), [period, today]);
+  const expenses = useMemo(() => entries.filter((e) => e.kind === 'expense'), [entries]);
   const rows = useMemo(
-    () => filterRows(entries, range, category).sort((a, b) => b.date.localeCompare(a.date)),
-    [entries, range, category],
+    () => filterRows(expenses, range, category).sort((a, b) => b.date.localeCompare(a.date)),
+    [expenses, range, category],
+  );
+  const inPeriod = useMemo(() => filterRows(entries, range, 'All'), [entries, range]);
+  const flow = useMemo(() => moneyFlow(inPeriod), [inPeriod]);
+  const balances = useMemo(() => accountBalances(entries), [entries]);
+  const activity = useMemo(
+    () => inPeriod.filter((e) => e.kind !== 'expense').sort((a, b) => b.date.localeCompare(a.date) || b.created_at.localeCompare(a.created_at)),
+    [inPeriod],
   );
   const stats = summarize(rows);
   const totals = categoryTotals(rows);
   const daily = useMemo(() => dailySeries(rows, range, today), [rows, range, today]);
-  const subs = useMemo(() => subscriptions(entries), [entries]);
-  const banks = useMemo(() => [...new Set(entries.flatMap((e) => (e.bank ? [e.bank] : [])))].sort(), [entries]);
+  const subs = useMemo(() => subscriptions(expenses), [expenses]);
+  const banks = useMemo(() => [...new Set(entries.flatMap((e) => [e.bank, e.to_bank].filter((b): b is string => !!b)))].sort(), [entries]);
 
   async function run(action: () => Promise<void>) {
     setBusy(true);
@@ -62,15 +73,15 @@ export default function Dashboard({ initial, loadError, canSignOut }: { initial:
   const save = (entry: Entry) =>
     run(async () => {
       const editing = form !== 'new' && form;
-      const { expense } = await request(editing ? '/api/expenses/' + editing.id : '/api/expenses', editing ? 'PATCH' : 'POST', entry);
-      setEntries(editing ? entries.map((e) => (e.id === editing.id ? expense : e)) : [expense, ...entries]);
+      const { transaction } = await request(editing ? '/api/transactions/' + editing.id : '/api/transactions', editing ? 'PATCH' : 'POST', entry);
+      setEntries(editing ? entries.map((e) => (e.id === editing.id ? transaction : e)) : [transaction, ...entries]);
       setForm(null);
     });
 
-  const remove = (expense: Expense) =>
+  const remove = (target: Transaction) =>
     run(async () => {
-      await request('/api/expenses/' + expense.id, 'DELETE');
-      setEntries(entries.filter((e) => e.id !== expense.id));
+      await request('/api/transactions/' + target.id, 'DELETE');
+      setEntries(entries.filter((e) => e.id !== target.id));
       setDeleting(null);
     });
 
@@ -82,7 +93,7 @@ export default function Dashboard({ initial, loadError, canSignOut }: { initial:
   function exportCsv() {
     const lines = [
       ['Date', 'Description', 'Category', 'Bank', 'Amount (INR)', 'Source'],
-      ...rows.map((e) => [e.date, e.description, e.category, e.bank ?? '', (e.amount_paise / 100).toFixed(2), e.source]),
+      ...rows.map((e) => [e.date, e.description, e.category ?? '', e.bank ?? '', (e.amount_paise / 100).toFixed(2), e.source]),
     ];
     const quote = (s: string) => '"' + (/^[=+\-@\t\r]/.test(s) ? "'" : '') + s.replaceAll('"', '""') + '"';
     const blob = new Blob(['﻿' + lines.map((l) => l.map(quote).join(',')).join('\r\n')], { type: 'text/csv;charset=utf-8' });
@@ -91,7 +102,7 @@ export default function Dashboard({ initial, loadError, canSignOut }: { initial:
     URL.revokeObjectURL(link.href);
   }
 
-  const openForm = (value: Expense | 'new') => {
+  const openForm = (value: Transaction | 'new') => {
     setError('');
     setForm(value);
   };
@@ -130,6 +141,11 @@ export default function Dashboard({ initial, loadError, canSignOut }: { initial:
         </label>
       </div>
 
+      <div className="grid two">
+        <MoneyFlow flow={flow} />
+        <Balances data={balances} />
+      </div>
+
       <div className="stats">
         <div className="card stat">
           <span className="stat-label">Total spent</span>
@@ -164,7 +180,10 @@ export default function Dashboard({ initial, loadError, canSignOut }: { initial:
 
       <div className="grid two">
         <RecentExpenses rows={rows} onEdit={openForm} onDelete={(e) => { setError(''); setDeleting(e); }} onExport={exportCsv} />
-        <Subscriptions items={subs} />
+        <div className="stack">
+          <Subscriptions items={subs} />
+          <Activity rows={activity} onDelete={(t) => { setError(''); setDeleting(t); }} />
+        </div>
       </div>
 
       {form && (

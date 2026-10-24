@@ -1,7 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { categoryColor, formatDate, money } from '@/lib/format';
-import type { Expense } from '@/lib/store';
+import type { Transaction } from '@/lib/store';
 
 const RECENT = 8;
 
@@ -11,9 +11,9 @@ export default function RecentExpenses({
   onDelete,
   onExport,
 }: {
-  rows: Expense[];
-  onEdit: (e: Expense) => void;
-  onDelete: (e: Expense) => void;
+  rows: Transaction[];
+  onEdit: (e: Transaction) => void;
+  onDelete: (e: Transaction) => void;
   onExport: () => void;
 }) {
   const [all, setAll] = useState(false);
@@ -29,7 +29,7 @@ export default function RecentExpenses({
       <ul className="expenses">
         {shown.map((e) => (
           <li key={e.id}>
-            <span className="dot big" style={{ background: categoryColor(e.category) }} aria-hidden="true" />
+            <span className="dot big" style={{ background: categoryColor(e.category ?? 'Other') }} aria-hidden="true" />
             <div className="expense-main">
               <strong>{e.description}</strong>
               <span className="meta">

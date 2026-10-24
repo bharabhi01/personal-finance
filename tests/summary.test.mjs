@@ -1,5 +1,5 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
-import {periodRange,monthOptions,filterRows,summarize,categoryTotals,dailySeries,subscriptions,addMonth} from '../lib/summary.ts';
+import {periodRange,monthOptions,filterRows,summarize,categoryTotals,dailySeries,subscriptions,addMonth,moneyFlow,accountBalances} from '../lib/summary.ts';
 const today='2026-10-24';
 const row=(date,amount_paise,category='Food',description='x',bank=null)=>({date,amount_paise,category,description,bank});
 test('Period ranges: month, last N calendar months, all time',()=>{
@@ -43,4 +43,42 @@ test('Subscriptions: latest charge per name, next due a month later',()=>{
  const subs=subscriptions(rows);
  assert.deepEqual(subs.map(s=>[s.name.trim(),s.amount_paise,s.next]),[['claude subscription',230000,'2026-11-03'],['Netflix',64900,'2026-11-08']]);
  assert.equal(addMonth('2026-01-31'),'2026-02-28');assert.equal(addMonth('2026-12-15'),'2027-01-15');
+});
+
+const led=(kind,date,rupees,bank=null,to_bank=null,created_at=date+'T12:00:00.000Z',description='x')=>({kind,date,amount_paise:rupees*100,category:null,description,bank,to_bank,created_at});
+test('Money flow: shares are fractions of income, with the remainder unallocated',()=>{
+ const f=moneyFlow([led('income','2026-10-01',100000),led('expense','2026-10-02',25000),led('investment','2026-10-05',20000),led('savings','2026-10-07',30000,'Axis Bank','Kotak Bank'),led('balance','2026-10-08',999)]);
+ assert.deepEqual([f.income,f.expenses,f.investments,f.savings,f.left],[10000000,2500000,2000000,3000000,2500000]);
+ assert.deepEqual(f.shares,{expenses:0.25,investments:0.2,savings:0.3});
+ const none=moneyFlow([led('expense','2026-10-02',500)]);assert.equal(none.shares.expenses,null);assert.equal(none.left,-50000);
+});
+test('Balances: reported balance, then later entries move it; savings accounts follow transfers in',()=>{
+ const rows=[
+  led('balance','2026-10-10',85000,'Kotak Bank',null,'2026-10-10T20:00:00.000Z'),
+  led('balance','2026-10-10',40000,'Axis Bank',null,'2026-10-10T20:00:01.000Z'),
+  led('savings','2026-10-12',30000,'Axis Bank','kotak bank','2026-10-12T09:00:00.000Z'),
+  led('expense','2026-10-13',2300,'Kotak Bank',null,'2026-10-13T09:00:00.000Z'),
+  led('income','2026-10-14',5000,'Axis Bank',null,'2026-10-14T09:00:00.000Z'),
+  led('investment','2026-10-15',10000,'Axis Bank',null,'2026-10-15T09:00:00.000Z'),
+ ];
+ const b=accountBalances(rows);
+ assert.deepEqual(b.accounts.map(a=>[a.name,a.balance,a.savings]),[['Kotak Bank',85000*100+30000*100-2300*100,true],['Axis Bank',(40000-30000+5000-10000)*100,false]]);
+ assert.equal(b.savingsTotal,112700*100);assert.equal(b.total,(112700+5000)*100);assert.equal(b.savingsUnknown,0);
+});
+test('Balances: older, same-day-earlier and backdated entries are already in the reported figure; the newest report wins',()=>{
+ const rows=[
+  led('expense','2026-10-09',1000,'Kotak Bank',null,'2026-10-09T09:00:00.000Z'),
+  led('expense','2026-10-10',500,'Kotak Bank',null,'2026-10-10T08:00:00.000Z'),
+  led('balance','2026-10-10',50000,'Kotak Bank',null,'2026-10-10T20:00:00.000Z'),
+  led('expense','2026-10-08',700,'Kotak Bank',null,'2026-10-11T09:00:00.000Z'),
+  led('expense','2026-10-10',300,'Kotak Bank',null,'2026-10-10T21:00:00.000Z'),
+ ];
+ assert.equal(accountBalances(rows).accounts[0].balance,(50000-300)*100);
+ const newer=[...rows,led('balance','2026-10-12',40000,'KOTAK BANK',null,'2026-10-12T10:00:00.000Z')];
+ assert.deepEqual(accountBalances(newer).accounts.map(a=>[a.name,a.balance]),[['KOTAK BANK',4000000]]);
+});
+test('Balances: banks without a reported balance show null and are left out of totals',()=>{
+ const b=accountBalances([led('expense','2026-10-02',100,'HDFC Bank'),led('savings','2026-10-03',500,'HDFC Bank','Kotak Bank')]);
+ assert.deepEqual(b.accounts.map(a=>[a.name,a.balance,a.savings]),[['Kotak Bank',null,true],['HDFC Bank',null,false]]);
+ assert.deepEqual([b.total,b.savingsTotal,b.savingsUnknown],[0,0,1]);assert.deepEqual(accountBalances([]).accounts,[]);
 });

@@ -1,4 +1,8 @@
-export type Row = { date: string; amount_paise: number; category: string; description: string; bank: string | null };
+/** The fields expense summaries read. */
+export type Row = { date: string; amount_paise: number; category: string | null; description: string; bank: string | null };
+/** A full ledger row, needed for money flow and balances. */
+export type LedgerRow = Row & { kind: string; to_bank: string | null; created_at: string };
+export type Account = { name: string; balance: number | null; savings: boolean; asOf: string | null };
 export type Range = { from: string | null; to: string | null };
 export type Subscription = { name: string; amount_paise: number; bank: string | null; last: string; next: string };
 
@@ -40,7 +44,10 @@ export function filterRows<T extends Row>(rows: T[], range: Range, category: str
 
 export function categoryTotals(rows: Row[]) {
   const totals = new Map<string, number>();
-  for (const r of rows) totals.set(r.category, (totals.get(r.category) ?? 0) + r.amount_paise);
+  for (const r of rows) {
+    const name = r.category ?? 'Other';
+    totals.set(name, (totals.get(name) ?? 0) + r.amount_paise);
+  }
   const sum = [...totals.values()].reduce((a, b) => a + b, 0);
   return [...totals]
     .map(([name, value]) => ({ name, value, share: sum ? value / sum : 0 }))
@@ -94,4 +101,63 @@ export function subscriptions(rows: Row[]): Subscription[] {
   return [...latest.values()]
     .map((r) => ({ name: r.description, amount_paise: r.amount_paise, bank: r.bank, last: r.date, next: addMonth(r.date) }))
     .sort((a, b) => a.next.localeCompare(b.next));
+}
+
+/** Where income went in a period. Shares are fractions of income (null when no income was logged). */
+export function moneyFlow(rows: LedgerRow[]) {
+  const sum = (kind: string) => rows.filter((r) => r.kind === kind).reduce((a, r) => a + r.amount_paise, 0);
+  const income = sum('income'), expenses = sum('expense'), investments = sum('investment'), savings = sum('savings');
+  const share = (value: number) => (income > 0 ? value / income : null);
+  return {
+    income, expenses, investments, savings,
+    left: income - expenses - investments - savings,
+    shares: { expenses: share(expenses), investments: share(investments), savings: share(savings) },
+  };
+}
+
+const bankKey = (name: string) => name.trim().toLowerCase();
+
+/**
+ * Current balance per bank: the latest balance the owner reported plus everything logged after it
+ * (dated on/after the report and entered later): income adds; expenses and investments subtract;
+ * a savings transfer subtracts from its bank and adds to its to_bank. Banks that have received a
+ * savings transfer are savings accounts. A bank with no reported balance has balance null.
+ */
+export function accountBalances(rows: LedgerRow[]) {
+  const newestFirst = [...rows].sort((a, b) => Date.parse(b.created_at) - Date.parse(a.created_at));
+  const accounts = new Map<string, Account & { report?: LedgerRow }>();
+  const account = (name: string) => {
+    const key = bankKey(name);
+    if (!accounts.has(key)) accounts.set(key, { name: name.trim(), balance: null, savings: false, asOf: null });
+    return accounts.get(key)!;
+  };
+  for (const r of newestFirst) {
+    if (r.bank) account(r.bank);
+    if (r.to_bank) account(r.to_bank).savings = true;
+  }
+  for (const r of newestFirst) {
+    const a = r.kind === 'balance' && r.bank ? account(r.bank) : null;
+    if (a && !a.report) Object.assign(a, { report: r, balance: r.amount_paise, asOf: r.date });
+  }
+  for (const r of rows) {
+    if (r.kind === 'balance') continue;
+    const move = (name: string | null, amount: number) => {
+      const a = name ? accounts.get(bankKey(name)) : undefined;
+      if (!a?.report || r.date < a.report.date || Date.parse(r.created_at) <= Date.parse(a.report.created_at)) return;
+      a.balance = a.balance! + amount;
+    };
+    const sign = r.kind === 'income' ? 1 : -1;
+    move(r.bank, sign * r.amount_paise);
+    if (r.kind === 'savings') move(r.to_bank, r.amount_paise);
+  }
+  const list = [...accounts.values()]
+    .map(({ name, balance, savings, asOf }) => ({ name, balance, savings, asOf }))
+    .sort((a, b) => Number(b.savings) - Number(a.savings) || a.name.localeCompare(b.name));
+  const known = list.filter((a) => a.balance !== null);
+  return {
+    accounts: list,
+    total: known.reduce((sum, a) => sum + a.balance!, 0),
+    savingsTotal: known.filter((a) => a.savings).reduce((sum, a) => sum + a.balance!, 0),
+    savingsUnknown: list.filter((a) => a.savings && a.balance === null).length,
+  };
 }

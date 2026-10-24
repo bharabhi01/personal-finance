@@ -81,6 +81,27 @@ select,input{background:var(--card);border:1px solid var(--line);border-radius:1
 .amount{font-weight:600;white-space:nowrap}
 .row-actions{display:flex;gap:2px}
 
+/* money flow, balances, activity */
+.hint{background:var(--accent-soft);color:#3730a3;border-radius:10px;padding:10px 14px;font-size:13px;margin-bottom:14px}
+.flow-bar{display:flex;height:14px;border-radius:999px;background:var(--line);overflow:hidden;margin-bottom:16px}
+.flow-bar span{display:block;height:100%}
+.flow-legend li{grid-template-columns:auto 1fr auto 48px}
+.balance-totals{display:flex;flex-wrap:wrap;gap:12px 40px;margin-bottom:8px}
+.balance-totals>div{display:flex;flex-direction:column;gap:2px}
+.stat-value.savings{color:#059669}
+.accounts li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+.accounts li>div{display:flex;flex-direction:column;min-width:0}
+.account-name{display:flex;align-items:center;gap:8px}
+.account-name .tag{margin:0}
+.savings-tag,.kind-savings{background:#d1fae5;color:#047857}
+.kind-income{background:#dcfce7;color:#15803d}
+.kind-investment{background:var(--accent-soft);color:var(--accent)}
+.kind-balance{background:var(--page);color:var(--muted)}
+.meta .tag{margin:0 8px 0 0}
+.amount.positive{color:#15803d}
+.stack{display:grid;gap:16px;align-content:start;min-width:0}
+.more{margin-top:12px;text-align:center}
+
 /* modal + form */
 .overlay{position:fixed;inset:0;background:rgba(20,22,31,.45);display:grid;place-items:center;padding:16px;z-index:10}
 .modal{background:var(--card);border-radius:var(--radius);padding:24px;width:100%;max-width:440px;max-height:calc(100vh - 32px);overflow:auto}

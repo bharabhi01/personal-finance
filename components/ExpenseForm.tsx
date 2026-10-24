@@ -1,7 +1,7 @@
 'use client';
 import { categories } from '@/lib/validation.mjs';
 import { todayIST } from '@/lib/format';
-import type { Entry, Expense } from '@/lib/store';
+import type { Entry, Transaction } from '@/lib/store';
 
 export default function ExpenseForm({
   expense,
@@ -11,7 +11,7 @@ export default function ExpenseForm({
   onSubmit,
   onCancel,
 }: {
-  expense?: Expense;
+  expense?: Transaction;
   banks: string[];
   busy: boolean;
   error: string;
@@ -22,6 +22,8 @@ export default function ExpenseForm({
     e.preventDefault();
     const f = new FormData(e.currentTarget);
     onSubmit({
+      kind: 'expense',
+      to_bank: null,
       amount_paise: Math.round(Number(f.get('amount')) * 100),
       description: String(f.get('description')),
       category: String(f.get('category')),
