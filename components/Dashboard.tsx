@@ -1,28 +1,188 @@
 'use client';
-import {useMemo,useState} from 'react';
-import {categories} from '@/lib/validation.mjs';
-type Expense={id:string,date:string,amount_paise:number,description:string,category:string,source:string};
-const money=(value:number)=>new Intl.NumberFormat('en-IN',{style:'currency',currency:'INR',maximumFractionDigits:2}).format(value/100);
-const today=()=>new Intl.DateTimeFormat('en-CA',{timeZone:'Asia/Kolkata'}).format(new Date());
-export default function Dashboard({initial,loadError}:{initial:Expense[],loadError?:string}){
- const [entries,setEntries]=useState(initial),[tab,setTab]=useState('Overview'),[query,setQuery]=useState(''),[category,setCategory]=useState('All'),[month,setMonth]=useState(today().slice(0,7)),[adding,setAdding]=useState(false),[busy,setBusy]=useState(false),[notice,setNotice]=useState(''),[importing,setImporting]=useState(false),[editing,setEditing]=useState<Expense|null>(null),[deleteTarget,setDeleteTarget]=useState<Expense|null>(null);
- const filtered=useMemo(()=>entries.filter(e=>(!month||e.date.startsWith(month))&&(category==='All'||e.category===category)&&e.description.toLowerCase().includes(query.toLowerCase())),[entries,month,category,query]);
- const total=filtered.reduce((a,e)=>a+e.amount_paise,0), grouped=categories.map((name:string)=>({name,value:filtered.filter(e=>e.category===name).reduce((a,e)=>a+e.amount_paise,0)})).filter((c:{value:number})=>c.value>0).sort((a:{value:number},b:{value:number})=>b.value-a.value), largest=grouped[0];
- const daily=useMemo(()=>{const byDay=new Map<string,number>();for(const e of filtered)byDay.set(e.date,(byDay.get(e.date)||0)+e.amount_paise);return [...byDay.entries()].sort((a,b)=>a[0]<b[0]?-1:1)},[filtered]);
- const maxDaily=daily.reduce((m,[,v])=>Math.max(m,v),1);
- async function save(e:React.FormEvent<HTMLFormElement>){e.preventDefault();setBusy(true);setNotice('');const f=new FormData(e.currentTarget);const amount=String(f.get('amount'));if(!/^\d+(\.\d{1,2})?$/.test(amount)){setNotice('Use an amount with up to two decimal places.');setBusy(false);return;}
- const entry={amount_paise:Math.round(Number(amount)*100),date:String(f.get('date')),description:String(f.get('description')),category:String(f.get('category'))};
- try{const r=await fetch(editing?'/api/expenses/'+editing.id:'/api/expenses',{method:editing?'PATCH':'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(entry)});const result=await r.json();if(!r.ok)throw new Error(result.error);setEntries(editing?entries.map(e=>e.id===editing.id?result.expense:e):[result.expense,...entries]);setNotice('Expense saved to your ledger.');setAdding(false);setEditing(null);}catch(e){setNotice(e instanceof Error?e.message:'Unable to save.');}setBusy(false);}
- async function importBatch(e:React.FormEvent<HTMLFormElement>){e.preventDefault();setBusy(true);setNotice('');const f=new FormData(e.currentTarget);
- try{const entries=JSON.parse(String(f.get('entries')));const r=await fetch('/api/import',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({source_message_id:String(f.get('message_id')),entries})});const result=await r.json();if(!r.ok)throw new Error(result.error);window.location.reload();}catch(e){setNotice(e instanceof Error?e.message:'Import failed.');setBusy(false);}}
- function exportCsv(){const rows=[['Date','Description','Category','Amount (INR)','Source'],...filtered.map(e=>[e.date,e.description,e.category,(e.amount_paise/100).toFixed(2),e.source])];const quote=(s:string)=>'"'+(/^[=+\-@\t\r]/.test(s)?"'":'')+s.replaceAll('"','""')+'"';const blob=new Blob(['\uFEFF'+rows.map(r=>r.map(quote).join(',')).join('\r\n')],{type:'text/csv;charset=utf-8'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='expenses.csv';a.click();URL.revokeObjectURL(url);}
- return <div className="shell"><aside className="sidebar"><a className="brand" href="/">Expense tracker<span>Personal ledger</span></a><nav aria-label="Dashboard"><p className="nav-section">Ledger</p>{['Overview','Transactions'].map(t=><button key={t} className={tab===t?'nav-item active':'nav-item'} onClick={()=>setTab(t)}>{t==='Overview'?<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><rect x="1.5" y="1.5" width="5.5" height="5.5" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><rect x="9" y="1.5" width="5.5" height="5.5" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><rect x="1.5" y="9" width="5.5" height="5.5" rx="1.5" stroke="currentColor" strokeWidth="1.3"/><rect x="9" y="9" width="5.5" height="5.5" rx="1.5" stroke="currentColor" strokeWidth="1.3"/></svg>:<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M2 4.5h12M2 8h12M2 11.5h12" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round"/></svg>}<span>{t}</span></button>)}</nav><div className="sidebar-note"><span className="status-dot"/>Private account<p>Protected by account access and database policies.</p></div></aside>
- <main className="dashboard"><header><div><p className="eyebrow">Your personal ledger</p><h1>{tab==='Overview'?'Spending, in focus.':'Every expense, together.'}</h1><p className="muted">A clear view of what you spent and where it went.</p></div><button className="button" onClick={()=>{setAdding(!adding);setEditing(null);setImporting(false);setNotice('');}}>{adding?'Close form':'+ Add expense'}</button></header>
- {loadError&&<p className="error" role="alert">{loadError}</p>}
- <div className="filters"><label>Period<input aria-label="Period" type="month" value={month} onChange={e=>setMonth(e.target.value)}/></label><label>Category<select aria-label="Category" value={category} onChange={e=>setCategory(e.target.value)}><option>All</option>{categories.map((c:string)=><option key={c}>{c}</option>)}</select></label><label className="search">Search<input placeholder="Dosa, cab, groceries…" value={query} onChange={e=>setQuery(e.target.value)}/></label><button className="text-button" onClick={()=>{setMonth('');setCategory('All');setQuery('')}}>Reset filters</button></div>
- {adding&&<section className="panel"><h2>{editing?'Edit expense':'Add an expense'}</h2><form key={editing?.id||'new'} className="entry-form" onSubmit={save}><label>Amount (₹)<input name="amount" defaultValue={editing?(editing.amount_paise/100).toFixed(2):undefined} inputMode="decimal" placeholder="180.00" required pattern="[0-9]+(\.[0-9]{1,2})?"/></label><label>Date<input type="date" name="date" defaultValue={editing?.date||today()} required/></label><label>Description<input name="description" defaultValue={editing?.description} maxLength={200} placeholder="Dosa" required/></label><label>Category<select aria-label="Expense category" name="category" defaultValue={editing?.category||'Food'}>{categories.map((c:string)=><option key={c}>{c}</option>)}</select></label><button className="button" disabled={busy}>{busy?'Saving…':editing?'Save changes':'Save expense'}</button></form></section>}
- <p className="notice" aria-live="polite">{notice}</p>
- {tab==='Overview'&&<><div className="stats"><section className="stat primary"><p>Total spent</p><div className="big-number">{money(total)}</div><span>{filtered.length} {filtered.length===1?'expense':'expenses'} in this view</span></section><section className="stat"><p>Top category</p><div className="metric">{largest?.name||'No spending yet'}</div><span>{largest?money(largest.value):'Add your first expense'}</span></section><section className="stat"><p>Average expense</p><div className="metric">{money(filtered.length?Math.round(total/filtered.length):0)}</div><span>Per recorded expense</span></section></div><div className="overview-grid"><section className="panel chart-panel"><div className="section-heading"><h2>Daily spending</h2><span>INR</span></div>{daily.length?<div className="chart" role="img" aria-label="Daily spending bar chart">{daily.map(([d,v])=><div className="chart-col" key={d} title={d+': '+money(v)}><div className="chart-bar" style={{height:Math.max(3,Math.round(v/maxDaily*100))+'%'}}/><span>{Number(d.slice(8))||d.slice(5)}</span></div>)}</div>:<p className="empty">Your daily spending will appear here.</p>}<p className="muted small">Each column is one day in the selected view. Taller means more spent.</p></section><section className="panel"><div className="section-heading"><h2>Where it went</h2><span>INR</span></div>{grouped.length?grouped.map((c:{name:string,value:number},i:number)=><button type="button" className="category-bar" aria-label={'Filter '+c.name} key={c.name} onClick={()=>setCategory(c.name)}><div><span>{c.name}</span><strong>{money(c.value)}</strong></div><div className="track"><div className={i===0?'fill teal':'fill'} style={{width:(c.value/total*100)+'%'}}/></div></button>):<p className="empty">Your category breakdown will appear here.</p>}<p className="muted small">Category share of spending in the selected view.</p></section><section className="panel log-panel"><h2>Log it your way.</h2><p>Use this app to add expenses, or send them in our WhatsApp conversation once the import path is set up and tested.</p><div className="message-example">₹180 dosa, ₹250 cab</div><p className="muted small">Chat entries must be checked, saved and confirmed. This app has no automatic WhatsApp connection.</p><button className="text-button" onClick={()=>{setImporting(!importing);setAdding(false)}}>{importing?'Close import':'Open reviewed chat import'}</button></section></div></>}
- {importing&&<section className="panel"><h2>Reviewed chat import</h2><p>Owner-only batch import. Use the original message ID to prevent repeat imports. Check amounts, dates and categories first.</p><form onSubmit={importBatch}><label>Original message ID<input name="message_id" maxLength={256} required/></label><label>Validated expense rows (JSON)<textarea name="entries" rows={6} placeholder={'[{"amount_paise":18000,"date":"2026-10-13","description":"Dosa","category":"Food"}]'} required/></label><button className="button" disabled={busy}>{busy?'Importing…':'Save reviewed entries'}</button></form></section>}
- <section className="panel ledger"><div className="section-heading"><h2>{tab==='Overview'?'Recent expenses':'Transactions'}</h2><button className="text-button" onClick={exportCsv} disabled={!filtered.length}>Export CSV</button></div>{filtered.length?<div>{filtered.slice(0,tab==='Overview'?8:filtered.length).map(e=><div className="expense-row" key={e.id}><div className="category-icon" aria-hidden="true">{e.category.slice(0,1)}</div><div className="expense-name"><strong>{e.description}</strong><span>{e.category} · {e.date} · {e.source==='whatsapp'?'WhatsApp':'App'}</span></div><strong className="expense-amount">{money(e.amount_paise)}</strong><div className="row-actions"><button className="text-button" aria-label={'Edit '+e.description} onClick={()=>{setEditing(e);setAdding(true);setImporting(false);window.scrollTo({top:0,behavior:'auto'})}}>Edit</button><button className="text-button" aria-label={'Delete '+e.description} onClick={()=>setDeleteTarget(e)}>Delete</button></div></div>)}</div>:<div className="empty"><h3>No expenses in this view.</h3><p>Try clearing your filters or add an expense.</p></div>}</section>{deleteTarget&&<section className="panel delete-review" role="alert"><h2>Delete {deleteTarget.description}?</h2><p>{money(deleteTarget.amount_paise)} · {deleteTarget.date}. This removes this expense from your ledger.</p><button className="button" disabled={busy} onClick={async()=>{setBusy(true);try{const r=await fetch('/api/expenses/'+deleteTarget.id,{method:'DELETE'});const result=await r.json();if(!r.ok)throw new Error(result.error);setEntries(entries.filter(e=>e.id!==deleteTarget.id));setDeleteTarget(null);setNotice('Expense deleted.');}catch(e){setNotice(e instanceof Error?e.message:'Delete failed.');}setBusy(false)}}>Confirm deletion</button> <button className="text-button" onClick={()=>setDeleteTarget(null)}>Keep expense</button></section>}<footer>INR · Dates use your expense date. No local-browser storage is used as the real ledger.</footer></main></div>
+import { useMemo, useState } from 'react';
+import { categories } from '@/lib/validation.mjs';
+import { money, todayIST } from '@/lib/format';
+import { categoryTotals, dailySeries, filterRows, monthOptions, periodRange, subscriptions, summarize } from '@/lib/summary';
+import type { Entry, Expense } from '@/lib/store';
+import CategoryBreakdown from '@/components/CategoryBreakdown';
+import DailyChart from '@/components/DailyChart';
+import ExpenseForm from '@/components/ExpenseForm';
+import Modal from '@/components/Modal';
+import RecentExpenses from '@/components/RecentExpenses';
+import Subscriptions from '@/components/Subscriptions';
+
+const RANGES = [
+  { value: 'last-3', label: 'Last 3 months' },
+  { value: 'last-6', label: 'Last 6 months' },
+  { value: 'last-9', label: 'Last 9 months' },
+  { value: 'last-12', label: 'Last 12 months' },
+  { value: 'all', label: 'All time' },
+];
+
+async function request(url: string, method: string, body?: Entry) {
+  const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: body && JSON.stringify(body) });
+  const result = await res.json();
+  if (!res.ok) throw new Error(result.error);
+  return result;
+}
+
+export default function Dashboard({ initial, loadError, canSignOut }: { initial: Expense[]; loadError?: string; canSignOut: boolean }) {
+  const today = todayIST();
+  const [entries, setEntries] = useState(initial);
+  const [period, setPeriod] = useState(today.slice(0, 7));
+  const [category, setCategory] = useState('All');
+  const [form, setForm] = useState<Expense | 'new' | null>(null);
+  const [deleting, setDeleting] = useState<Expense | null>(null);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+
+  const months = useMemo(() => monthOptions(today), [today]);
+  const range = useMemo(() => periodRange(period, today), [period, today]);
+  const rows = useMemo(
+    () => filterRows(entries, range, category).sort((a, b) => b.date.localeCompare(a.date)),
+    [entries, range, category],
+  );
+  const stats = summarize(rows);
+  const totals = categoryTotals(rows);
+  const daily = useMemo(() => dailySeries(rows, range, today), [rows, range, today]);
+  const subs = useMemo(() => subscriptions(entries), [entries]);
+  const banks = useMemo(() => [...new Set(entries.flatMap((e) => (e.bank ? [e.bank] : [])))].sort(), [entries]);
+
+  async function run(action: () => Promise<void>) {
+    setBusy(true);
+    setError('');
+    try {
+      await action();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Something went wrong.');
+    }
+    setBusy(false);
+  }
+
+  const save = (entry: Entry) =>
+    run(async () => {
+      const editing = form !== 'new' && form;
+      const { expense } = await request(editing ? '/api/expenses/' + editing.id : '/api/expenses', editing ? 'PATCH' : 'POST', entry);
+      setEntries(editing ? entries.map((e) => (e.id === editing.id ? expense : e)) : [expense, ...entries]);
+      setForm(null);
+    });
+
+  const remove = (expense: Expense) =>
+    run(async () => {
+      await request('/api/expenses/' + expense.id, 'DELETE');
+      setEntries(entries.filter((e) => e.id !== expense.id));
+      setDeleting(null);
+    });
+
+  async function signOut() {
+    await fetch('/api/logout', { method: 'POST' });
+    window.location.assign('/login');
+  }
+
+  function exportCsv() {
+    const lines = [
+      ['Date', 'Description', 'Category', 'Bank', 'Amount (INR)', 'Source'],
+      ...rows.map((e) => [e.date, e.description, e.category, e.bank ?? '', (e.amount_paise / 100).toFixed(2), e.source]),
+    ];
+    const quote = (s: string) => '"' + (/^[=+\-@\t\r]/.test(s) ? "'" : '') + s.replaceAll('"', '""') + '"';
+    const blob = new Blob(['﻿' + lines.map((l) => l.map(quote).join(',')).join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    const link = Object.assign(document.createElement('a'), { href: URL.createObjectURL(blob), download: 'expenses.csv' });
+    link.click();
+    URL.revokeObjectURL(link.href);
+  }
+
+  const openForm = (value: Expense | 'new') => {
+    setError('');
+    setForm(value);
+  };
+  const closeForm = () => !busy && setForm(null);
+
+  return (
+    <div className="page">
+      <header className="topbar">
+        <div className="brand"><span className="logo" aria-hidden="true" />Expense tracker</div>
+        <div className="topbar-actions">
+          {canSignOut && <button className="btn ghost" onClick={signOut}>Sign out</button>}
+          <button className="btn primary" onClick={() => openForm('new')}>+ Add expense</button>
+        </div>
+      </header>
+
+      {loadError && <p className="banner" role="alert">{loadError}</p>}
+
+      <div className="filters">
+        <label>
+          Period
+          <select value={period} onChange={(e) => setPeriod(e.target.value)}>
+            <optgroup label="Month">
+              {months.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
+            </optgroup>
+            <optgroup label="Range">
+              {RANGES.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
+            </optgroup>
+          </select>
+        </label>
+        <label>
+          Category
+          <select value={category} onChange={(e) => setCategory(e.target.value)}>
+            <option>All</option>
+            {categories.map((c: string) => <option key={c}>{c}</option>)}
+          </select>
+        </label>
+      </div>
+
+      <div className="stats">
+        <div className="card stat">
+          <span className="stat-label">Total spent</span>
+          <strong className="stat-value">{money(stats.total)}</strong>
+          <span className="muted">{stats.count} {stats.count === 1 ? 'expense' : 'expenses'}</span>
+        </div>
+        <div className="card stat">
+          <span className="stat-label">Top category</span>
+          <strong className="stat-value">{stats.top?.name ?? '—'}</strong>
+          <span className="muted">{stats.top ? `${money(stats.top.value)} · ${Math.round(stats.top.share * 100)}% of spending` : 'No spending yet'}</span>
+        </div>
+        <div className="card stat">
+          <span className="stat-label">Average expense</span>
+          <strong className="stat-value">{money(stats.average)}</strong>
+          <span className="muted">per expense</span>
+        </div>
+      </div>
+
+      <div className="grid two">
+        <section className="card wide">
+          <header className="card-head">
+            <h2>Daily spending</h2>
+            {daily.clipped && <span className="muted">Most recent 366 days</span>}
+          </header>
+          {stats.total ? <DailyChart points={daily.points} /> : <p className="empty">No spending in this view.</p>}
+        </section>
+        <section className="card">
+          <header className="card-head"><h2>Category breakdown</h2></header>
+          {stats.total ? <CategoryBreakdown totals={totals} total={stats.total} /> : <p className="empty">No spending in this view.</p>}
+        </section>
+      </div>
+
+      <div className="grid two">
+        <RecentExpenses rows={rows} onEdit={openForm} onDelete={(e) => { setError(''); setDeleting(e); }} onExport={exportCsv} />
+        <Subscriptions items={subs} />
+      </div>
+
+      {form && (
+        <Modal title={form === 'new' ? 'Add expense' : 'Edit expense'} onClose={closeForm}>
+          <ExpenseForm key={form === 'new' ? 'new' : form.id} expense={form === 'new' ? undefined : form}
+            banks={banks} busy={busy} error={error} onSubmit={save} onCancel={closeForm} />
+        </Modal>
+      )}
+      {deleting && (
+        <Modal title={`Delete ${deleting.description}?`} onClose={() => !busy && setDeleting(null)}>
+          <p className="muted">{money(deleting.amount_paise)} · {deleting.date}. This can't be undone.</p>
+          <p className="error" role="alert">{error}</p>
+          <div className="actions">
+            <button className="btn ghost" onClick={() => setDeleting(null)} disabled={busy}>Keep expense</button>
+            <button className="btn danger" onClick={() => remove(deleting)} disabled={busy}>{busy ? 'Deleting…' : 'Delete'}</button>
+          </div>
+        </Modal>
+      )}
+    </div>
+  );
 }
