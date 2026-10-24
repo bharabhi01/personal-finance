@@ -1,2 +1,0 @@
-import {db} from '@/lib/server';import {NextResponse} from 'next/server';
-export async function GET(req:Request){const url=new URL(req.url),code=url.searchParams.get('code');if(code){const client=await db();const {error}=await client.auth.exchangeCodeForSession(code);if(!error){const response=NextResponse.redirect(new URL('/account',url.origin));response.headers.set('Cache-Control','private, no-store');return response;}}return NextResponse.redirect(new URL('/recover?failed=1',url.origin));}

@@ -1,5 +1,6 @@
 node_modules
 .next
 .env*
+.dev-data.json
 *.tsbuildinfo
 .git

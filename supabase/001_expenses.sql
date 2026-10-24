@@ -1,9 +1,4 @@
 begin;
-create table public.allowed_users (user_id uuid primary key references auth.users(id) on delete cascade);
-alter table public.allowed_users enable row level security;
-create policy "Owner can check own access" on public.allowed_users for select to authenticated using (user_id=(select auth.uid()));
-revoke all on public.allowed_users from public,anon,authenticated;
-grant select on public.allowed_users to authenticated;
 create table public.expenses (
  id uuid primary key default gen_random_uuid(), user_id uuid not null references auth.users(id) on delete cascade,
  amount_paise bigint not null check(amount_paise>0 and amount_paise<=100000000), currency text not null default 'INR' check(currency='INR'),
@@ -16,8 +11,8 @@ create table public.expenses (
 );
 alter table public.expenses enable row level security;
 create policy "Private owner access" on public.expenses for all to authenticated
- using (user_id=(select auth.uid()) and exists(select 1 from public.allowed_users where user_id=(select auth.uid())))
- with check(user_id=(select auth.uid()) and exists(select 1 from public.allowed_users where user_id=(select auth.uid())));
+ using (user_id=(select auth.uid()))
+ with check(user_id=(select auth.uid()));
 grant select,insert,update,delete on public.expenses to authenticated;
 revoke all on public.expenses from anon;
 create index expenses_owner_date on public.expenses(user_id,date desc);
@@ -27,8 +22,8 @@ create table public.expense_imports (
 );
 alter table public.expense_imports enable row level security;
 create policy "Private import access" on public.expense_imports for all to authenticated
- using (user_id=(select auth.uid()) and exists(select 1 from public.allowed_users where user_id=(select auth.uid())))
- with check(user_id=(select auth.uid()) and exists(select 1 from public.allowed_users where user_id=(select auth.uid())));
+ using (user_id=(select auth.uid()))
+ with check(user_id=(select auth.uid()));
 revoke all on public.expense_imports from public,anon,authenticated;
 grant select,insert on public.expense_imports to authenticated;
 revoke all on public.expense_imports from anon;
@@ -37,7 +32,6 @@ create function public.import_expenses(message_id text,items jsonb) returns json
 declare n int; prior jsonb; inserted int;
 begin
  if auth.uid() is null then raise exception 'Authentication required'; end if;
- if not exists(select 1 from public.allowed_users a where a.user_id=auth.uid()) then raise exception 'Access denied'; end if;
  if items is null or jsonb_typeof(items)<>'array' then raise exception 'Expected array'; end if;
  if message_id is null or length(message_id) not between 1 and 256 then raise exception 'Invalid message ID'; end if;
  n:=jsonb_array_length(items); if n<1 or n>50 then raise exception 'Invalid batch size'; end if;
