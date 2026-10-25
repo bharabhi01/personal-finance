@@ -2,6 +2,16 @@
 
 A single-user Next.js expense tracker backed by Supabase (Auth + Postgres). You message Instinct AI an expense ("Claude Subscription Rs 2300 Kotak Bank"), income, investment, savings transfer or bank balance, Instinct saves it through this app's API, and the dashboard shows it. Amounts are stored as integer paise.
 
+## Dashboard
+
+- **Filters:** period (any month, last 3/6/9/12 months, all time) and expense category.
+- **Total balance:** your bank balances, with the savings accounts called out.
+- **Where your income went:** expenses, investments and savings as a share of income for the period.
+- **Tiles:** total spent, top category, average expense and monthly subscriptions.
+- **Charts and lists:** daily spending, category breakdown, recent expenses (edit, delete, CSV export), subscriptions, and income, investments, savings and balance entries.
+- **Top bar:** icon buttons for the dark/light toggle, sign out (production only) and add expense. Dark mode is the default; the choice is remembered in the browser.
+- Expenses can be added by hand. Income, investments, savings and balances are entered through Instinct and can be deleted on the dashboard.
+
 ## Local development
 
 `npm ci`, then `npm run dev` (Node 22.18 or newer). No environment variables, Supabase project or login are needed: in development the app opens straight to the dashboard and keeps expenses in `.dev-data.json` (git-ignored; seeded with sample data on first run; delete it to reset). `/login` redirects to `/`.
