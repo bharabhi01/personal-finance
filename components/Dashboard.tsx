@@ -6,7 +6,7 @@ import { accountBalances, categoryTotals, dailySeries, filterRows, monthOptions,
 import type { Entry, Transaction } from '@/lib/store';
 import Activity from '@/components/Activity';
 import Balances from '@/components/Balances';
-import MoneyFlow from '@/components/MoneyFlow';
+import Mosaic from '@/components/Mosaic';
 import CategoryBreakdown from '@/components/CategoryBreakdown';
 import DailyChart from '@/components/DailyChart';
 import ExpenseForm from '@/components/ExpenseForm';
@@ -136,48 +136,32 @@ export default function Dashboard({ initial, loadError, canSignOut }: { initial:
 
       {loadError && <p className="banner" role="alert">{loadError}</p>}
 
-      <div className="filters">
-        <label>
-          Period
-          <select value={period} onChange={(e) => setPeriod(e.target.value)}>
-            <optgroup label="Month">
-              {months.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
-            </optgroup>
-            <optgroup label="Range">
-              {RANGES.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
-            </optgroup>
-          </select>
-        </label>
-        <label>
-          Category
-          <select value={category} onChange={(e) => setCategory(e.target.value)}>
-            <option>All</option>
-            {categories.map((c: string) => <option key={c}>{c}</option>)}
-          </select>
-        </label>
-      </div>
-
-      <div className="grid two">
-        <MoneyFlow flow={flow} />
-        <Balances data={balances} />
-      </div>
-
-      <div className="stats">
-        <div className="card stat">
-          <span className="stat-label">Total spent</span>
-          <strong className="stat-value">{money(stats.total)}</strong>
-          <span className="muted">{stats.count} {stats.count === 1 ? 'expense' : 'expenses'}</span>
+      <div className="hero-grid">
+        <div className="hero">
+          <h1>Your money,<br />at a glance</h1>
+          <div className="filters">
+            <label>
+              Period
+              <select value={period} onChange={(e) => setPeriod(e.target.value)}>
+                <optgroup label="Month">
+                  {months.map((m) => <option key={m.value} value={m.value}>{m.label}</option>)}
+                </optgroup>
+                <optgroup label="Range">
+                  {RANGES.map((r) => <option key={r.value} value={r.value}>{r.label}</option>)}
+                </optgroup>
+              </select>
+            </label>
+            <label>
+              Category
+              <select value={category} onChange={(e) => setCategory(e.target.value)}>
+                <option>All</option>
+                {categories.map((c: string) => <option key={c}>{c}</option>)}
+              </select>
+            </label>
+          </div>
+          <Balances data={balances} />
         </div>
-        <div className="card stat">
-          <span className="stat-label">Top category</span>
-          <strong className="stat-value">{stats.top?.name ?? '—'}</strong>
-          <span className="muted">{stats.top ? `${money(stats.top.value)} · ${Math.round(stats.top.share * 100)}% of spending` : 'No spending yet'}</span>
-        </div>
-        <div className="card stat">
-          <span className="stat-label">Average expense</span>
-          <strong className="stat-value">{money(stats.average)}</strong>
-          <span className="muted">per expense</span>
-        </div>
+        <Mosaic flow={flow} stats={stats} subs={subs} />
       </div>
 
       <div className="grid two">

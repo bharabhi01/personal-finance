@@ -18,12 +18,12 @@ export function formatDate(iso: string) {
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
-  Food: '#f59e0b',
-  Travel: '#0ea5e9',
-  Shopping: '#ec4899',
-  Bills: '#8b5cf6',
-  Health: '#10b981',
-  Subscriptions: '#4f46e5',
-  Other: '#94a3b8',
+  Food: '#e8a33d',
+  Travel: '#5b9bb5',
+  Shopping: '#d9768b',
+  Bills: '#9a85c9',
+  Health: '#6fae6a',
+  Subscriptions: '#3f7d5a',
+  Other: '#a8a89e',
 };
 export const categoryColor = (name: string) => CATEGORY_COLORS[name] ?? CATEGORY_COLORS.Other;

@@ -6,24 +6,21 @@ type Balances = ReturnType<typeof accountBalances>;
 export default function Balances({ data }: { data: Balances }) {
   const hasSavings = data.accounts.some((a) => a.savings);
   return (
-    <section className="card">
-      <header className="card-head"><h2>Bank balances</h2></header>
+    <section className="balances">
+      <div className="orb" aria-hidden="true" />
+      <span className="label">Total balance</span>
+      <strong className="hero-number">{money(data.total)}</strong>
       {data.accounts.length === 0 && <p className="empty">Tell Instinct your balance, e.g. "Kotak Bank balance 85000".</p>}
       {data.accounts.length > 0 && (
         <>
-          <div className="balance-totals">
-            <div>
-              <span className="stat-label">Total balance</span>
-              <strong className="stat-value">{money(data.total)}</strong>
+          {hasSavings && (
+            <div className="pin">
+              <span className="pin-dot" aria-hidden="true" />
+              <span className="label">Savings</span>
+              <strong className="pin-value">{money(data.savingsTotal)}</strong>
+              {data.savingsUnknown > 0 && <span className="muted">+ {data.savingsUnknown} savings account without a balance</span>}
             </div>
-            {hasSavings && (
-              <div>
-                <span className="stat-label">Savings</span>
-                <strong className="stat-value savings">{money(data.savingsTotal)}</strong>
-                {data.savingsUnknown > 0 && <span className="muted">+ {data.savingsUnknown} savings account without a balance</span>}
-              </div>
-            )}
-          </div>
+          )}
           <ul className="accounts">
             {data.accounts.map((a) => (
               <li key={a.name}>
