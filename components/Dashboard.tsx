@@ -90,6 +90,12 @@ export default function Dashboard({ initial, loadError, canSignOut }: { initial:
     window.location.assign('/login');
   }
 
+  function toggleTheme() {
+    const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+    document.documentElement.dataset.theme = next;
+    localStorage.setItem('theme', next);
+  }
+
   function exportCsv() {
     const lines = [
       ['Date', 'Description', 'Category', 'Bank', 'Amount (INR)', 'Source'],
@@ -113,8 +119,18 @@ export default function Dashboard({ initial, loadError, canSignOut }: { initial:
       <header className="topbar">
         <div className="brand"><span className="logo" aria-hidden="true" />Expense tracker</div>
         <div className="topbar-actions">
-          {canSignOut && <button className="btn ghost" onClick={signOut}>Sign out</button>}
-          <button className="btn primary" onClick={() => openForm('new')}>+ Add expense</button>
+          <button className="btn ghost icon" onClick={toggleTheme} aria-label="Toggle dark mode" title="Toggle dark mode">
+            <svg viewBox="0 0 24 24" className="icon-moon" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8z" /></svg>
+            <svg viewBox="0 0 24 24" className="icon-sun" aria-hidden="true"><circle cx="12" cy="12" r="4" /><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></svg>
+          </button>
+          {canSignOut && (
+            <button className="btn ghost icon" onClick={signOut} aria-label="Sign out" title="Sign out">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9" /></svg>
+            </button>
+          )}
+          <button className="btn primary icon" onClick={() => openForm('new')} aria-label="Add expense" title="Add expense">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" /></svg>
+          </button>
         </div>
       </header>
 
