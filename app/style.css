@@ -148,7 +148,7 @@ select{appearance:none;padding-right:38px;background-image:var(--chevron);backgr
 .expenses li,.subs li{display:flex;align-items:center;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
 .expenses li:first-child,.subs li:first-child{border-top:0}
 .expense-main,.subs li>div:first-child{flex:1;min-width:0;display:flex;flex-direction:column}
-.meta{color:var(--muted);font-size:13px}
+.meta{color:var(--muted);font-size:13px;display:flex;flex-wrap:wrap;align-items:center;gap:2px 8px}
 .tag{margin-left:8px;background:var(--accent-soft);color:var(--accent);border-radius:999px;padding:1px 9px;font-size:11px;font-weight:600}
 .amount{font-weight:600;white-space:nowrap}
 .row-actions{display:flex;gap:2px}
@@ -157,7 +157,7 @@ select{appearance:none;padding-right:38px;background-image:var(--chevron);backgr
 .kind-income{background:var(--income-soft);color:var(--income-ink)}
 .kind-investment{background:var(--accent-soft);color:var(--accent)}
 .kind-balance{background:var(--line);color:var(--muted)}
-.meta .tag{margin:0 8px 0 0}
+.meta .tag{margin:0}
 .amount.positive{color:var(--income-ink)}
 .stack{display:grid;gap:20px;align-content:start;min-width:0}
 .more{margin-top:12px;text-align:center}
