@@ -1,5 +1,5 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
-import {periodRange,monthOptions,filterRows,summarize,categoryTotals,dailySeries,subscriptions,addMonth,moneyFlow,accountBalances} from '../lib/summary.ts';
+import {periodRange,monthOptions,latestMonth,filterRows,summarize,categoryTotals,dailySeries,subscriptions,addMonth,moneyFlow,accountBalances} from '../lib/summary.ts';
 const today='2026-10-24';
 const row=(date,amount_paise,category='Food',description='x',bank=null)=>({date,amount_paise,category,description,bank});
 test('Period ranges: month, last N calendar months, all time',()=>{
@@ -13,6 +13,11 @@ test('Period ranges: month, last N calendar months, all time',()=>{
 test('Month options run newest first across the year boundary',()=>{
  const months=monthOptions('2026-02-10',4);
  assert.deepEqual(months.map(m=>m.value),['2026-02','2026-01','2025-12','2025-11']);assert.equal(months[0].label,'February 2026');
+});
+test('The default month follows the newest entry, even past today, and falls back to today',()=>{
+ assert.equal(latestMonth([row('2026-09-30',1),row('2026-11-02',2),row('2026-10-05',3)],today),'2026-11');
+ assert.equal(latestMonth([],today),'2026-10');
+ assert.equal(monthOptions('2026-11-02',2)[0].value,'2026-11');
 });
 test('Filtering is inclusive on dates and by category',()=>{
  const rows=[row('2026-09-30',1),row('2026-10-01',2),row('2026-10-31',4,'Bills'),row('2026-11-01',8)];

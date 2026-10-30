@@ -18,7 +18,9 @@ export function formatDate(iso: string) {
 }
 
 const CATEGORY_COLORS: Record<string, string> = {
+  Housing: '#c27c5a',
   Food: '#e8a33d',
+  Groceries: '#b5c957',
   Travel: '#5b9bb5',
   Shopping: '#d9768b',
   Bills: '#9a85c9',

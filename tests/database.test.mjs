@@ -7,13 +7,13 @@ const migrate=file=>db.exec(fs.readFileSync(new URL('../supabase/'+file,import.m
 await migrate('001_expenses.sql');await migrate('002_bank_and_subscriptions.sql');
 // An expense saved before 003 must survive it.
 await db.exec(`insert into auth.users values('${owner}'),('${other}');insert into public.expenses(user_id,amount_paise,date,description,category,bank,source) values('${owner}',99900,'2026-09-01','Old expense','Food','Kotak Bank','app')`);
-await migrate('003_transactions.sql');
+await migrate('003_transactions.sql');await migrate('004_categories.sql');
 const old=(await db.query("select kind,category,to_bank,amount_paise::int as amount from public.transactions")).rows;
 if(old.length!==1||old[0].kind!=='expense'||old[0].category!=='Food'||old[0].to_bank!==null||old[0].amount!==99900)throw Error('existing expense not migrated');console.log('PASS existing expenses become kind=expense in transactions');
 await db.exec(`set role authenticated;set request.jwt.claim.sub='${owner}';`);
 const mustFail=async(label,fn)=>{try{await fn();}catch(e){if(!/violates|permission denied|does not exist|row-level security/.test(e.message))throw new Error('Failed for the wrong reason ('+label+'): '+e.message);console.log('PASS '+label);return;}throw new Error('DID NOT FAIL '+label);};
 const add=(user,{kind='expense',amount=18000,category=null,bank=null,to_bank=null,source='app',message=null,line=null})=>db.query('insert into public.transactions(user_id,kind,amount_paise,date,description,category,bank,to_bank,source,source_message_id,source_line) values($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)',[user,kind,amount,'2026-10-13','TEST',category,bank,to_bank,source,message,line]);
-await add(owner,{category:'Subscriptions',bank:'Kotak Bank'});await add(owner,{category:'Food'});
+await add(owner,{category:'Subscriptions',bank:'Kotak Bank'});await add(owner,{category:'Food'});await add(owner,{category:'Housing'});await add(owner,{category:'Groceries'});
 await add(owner,{kind:'income',amount:15000000,bank:'Kotak Bank'});await add(owner,{kind:'investment',amount:2000000000});
 await add(owner,{kind:'savings',amount:3000000,bank:'Axis Bank',to_bank:'Kotak Bank'});await add(owner,{kind:'balance',amount:0,bank:'Kotak Bank'});
 console.log('PASS every kind can be saved (large investments, zero balance, optional banks)');

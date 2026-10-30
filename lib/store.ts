@@ -84,8 +84,8 @@ type DevRow = Transaction & {source_message_id?:string; source_line?:number};
 
 const SAMPLE_EXPENSES:[number,string,string,number,string][]=[
  [3,'Claude Subscription','Subscriptions',2300,'Kotak Bank'],[8,'Netflix','Subscriptions',649,'HDFC Bank'],[12,'Spotify','Subscriptions',119,'HDFC Bank'],
- [5,'Internet bill','Bills',999,'Kotak Bank'],[10,'Electricity','Bills',1840,'Kotak Bank'],
- [2,'Dosa','Food',180,'Axis Bank'],[6,'Groceries','Food',1650,'HDFC Bank'],[11,'Dinner out','Food',920,'HDFC Bank'],[17,'Filter coffee','Food',90,'Axis Bank'],[22,'Swiggy','Food',540,'HDFC Bank'],
+ [1,'Rent','Housing',18000,'Kotak Bank'],[10,'Electricity','Housing',1840,'Kotak Bank'],[5,'Credit card bill','Bills',4200,'Kotak Bank'],
+ [2,'Dosa','Food',180,'Axis Bank'],[6,'Groceries','Groceries',1650,'HDFC Bank'],[11,'Dinner out','Food',920,'HDFC Bank'],[17,'Filter coffee','Food',90,'Axis Bank'],[22,'Swiggy','Food',540,'HDFC Bank'],
  [4,'Cab','Travel',250,'Axis Bank'],[14,'Fuel','Travel',1200,'Kotak Bank'],[20,'Metro card','Travel',500,'Axis Bank'],
  [9,'Shoes','Shopping',3200,'HDFC Bank'],[19,'Books','Shopping',780,'Kotak Bank'],[15,'Pharmacy','Health',430,'Axis Bank'],
 ];
@@ -97,7 +97,7 @@ function sampleRows():DevRow[] {
   ({id:randomUUID(),kind,date,amount_paise:rupees*100,description,category:null,bank:null,to_bank:null,source:'app',created_at:`${date}T${time}.000Z`,...fields});
  const months=Array.from({length:6},(_,back)=>[
   ...SAMPLE_EXPENSES.map(([d,description,category,rupees,bank])=>
-   row('expense',isoDay(year,month-1-back,d),rupees+(category==='Subscriptions'||category==='Bills'?0:((d*(back+1))%7)*10),description,{category,bank})),
+   row('expense',isoDay(year,month-1-back,d),rupees+(category==='Subscriptions'||category==='Bills'||category==='Housing'?0:((d*(back+1))%7)*10),description,{category,bank})),
   row('income',isoDay(year,month-1-back,1),160000,'Salary',{bank:'Kotak Bank'}),
   row('investment',isoDay(year,month-1-back,5),20000,'SIP 1',{bank:'Axis Bank'}),
   row('investment',isoDay(year,month-1-back,5),10000,'SIP 2',{bank:'Axis Bank'}),

@@ -24,8 +24,14 @@ export function periodRange(period: string, today: string): Range {
   return { from: iso(new Date(Date.UTC(y, m - months, 1))), to: null };
 }
 
-export function monthOptions(today: string, count = 12) {
-  const [y, m] = today.split('-').map(Number);
+/** The month ('YYYY-MM') of the most recent entry, or today's month when there are none. */
+export function latestMonth(rows: Row[], today: string) {
+  return rows.reduce((latest, r) => (r.date > latest ? r.date : latest), '').slice(0, 7) || today.slice(0, 7);
+}
+
+/** The `count` months ending at the month of `newest` (a date), newest first. */
+export function monthOptions(newest: string, count = 12) {
+  const [y, m] = newest.split('-').map(Number);
   return Array.from({ length: count }, (_, i) => {
     const d = new Date(Date.UTC(y, m - 1 - i, 1));
     const label = new Intl.DateTimeFormat('en-IN', { month: 'long', year: 'numeric', timeZone: 'UTC' }).format(d);

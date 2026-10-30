@@ -20,7 +20,7 @@ A single-user Next.js expense tracker backed by Supabase (Auth + Postgres). You 
 
 ## Setup and production
 
-1. In Supabase, run `supabase/001_expenses.sql`, `002_bank_and_subscriptions.sql` and `003_transactions.sql` once each and in order. They are not idempotent, so on an existing project run only the ones not yet applied, after a backup.
+1. In Supabase, run `supabase/001_expenses.sql`, `002_bank_and_subscriptions.sql`, `003_transactions.sql` and `004_categories.sql` once each and in order. They are not idempotent, so on an existing project run only the ones not yet applied, after a backup.
 2. Create your user in the Supabase dashboard, then turn off public sign-ups (Auth settings). Copy the user's UUID.
 3. Set the variables in `.env.example` in Vercel: the Supabase URL and anon key, plus `SUPABASE_SERVICE_ROLE_KEY`, `OWNER_USER_ID` (the UUID) and `INSTINCT_API_KEY` (any long random string, e.g. `openssl rand -hex 32`).
 4. Production shows an email/password login at `/login`. To change your password, use the Supabase dashboard.
@@ -42,7 +42,7 @@ A single-user Next.js expense tracker backed by Supabase (Auth + Postgres). You 
 ```
 
 - `amount` is in rupees (at most two decimals). `date` (YYYY-MM-DD) is optional and defaults to today in IST. `bank` is optional on expenses, income and investments, but then that money can't move a bank balance.
-- Expense `category` must be one of: Food, Travel, Shopping, Bills, Health, Subscriptions, Other. Recurring services such as Claude or Netflix go under Subscriptions; they populate "My subscriptions".
+- Expense `category` must be one of: Housing, Bills, Food, Groceries, Shopping, Subscriptions, Travel, Health, Other (use Other only when nothing fits; Instinct should ask instead of guessing). Rent, electricity and furniture rent are Housing; credit card bills are Bills; Swiggy, Zomato and eating out are Food; groceries are Groceries. Recurring services such as Claude or Netflix go under Subscriptions; they populate "My subscriptions".
 - **Use one spelling per bank** ("Kotak Bank", not "Kotak" and "kotak bank" in different messages). Matching ignores case and surrounding spaces, but not other differences.
 - `savings` is a transfer between your own banks. The `to_bank` becomes a savings account, and the dashboard's Savings figure is the live balance of those accounts.
 - `balances` is the exact amount in a bank right now. From then on, the dashboard's balance for that bank moves with everything logged afterwards: income adds, expenses and investments subtract, a savings transfer subtracts from `from_bank` and adds to `to_bank`. Entries dated before the report, or entered before it, are treated as already included. Send a balance as its own message, not in the same message as entries that should change it.

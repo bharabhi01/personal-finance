@@ -2,7 +2,7 @@
 import { useMemo, useState } from 'react';
 import { categories } from '@/lib/validation.mjs';
 import { money, todayIST } from '@/lib/format';
-import { accountBalances, categoryTotals, dailySeries, filterRows, monthOptions, moneyFlow, periodRange, subscriptions, summarize } from '@/lib/summary';
+import { accountBalances, categoryTotals, dailySeries, filterRows, latestMonth, monthOptions, moneyFlow, periodRange, subscriptions, summarize } from '@/lib/summary';
 import type { Entry, Transaction } from '@/lib/store';
 import Activity from '@/components/Activity';
 import Balances from '@/components/Balances';
@@ -32,14 +32,15 @@ async function request(url: string, method: string, body?: Entry) {
 export default function Dashboard({ initial, loadError, canSignOut }: { initial: Transaction[]; loadError?: string; canSignOut: boolean }) {
   const today = todayIST();
   const [entries, setEntries] = useState(initial);
-  const [period, setPeriod] = useState(today.slice(0, 7));
+  const [period, setPeriod] = useState(() => latestMonth(initial, today));
   const [category, setCategory] = useState('All');
   const [form, setForm] = useState<Transaction | 'new' | null>(null);
   const [deleting, setDeleting] = useState<Transaction | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
 
-  const months = useMemo(() => monthOptions(today), [today]);
+  const newest = useMemo(() => [today, ...entries.map((e) => e.date)].reduce((a, b) => (b > a ? b : a)), [today, entries]);
+  const months = useMemo(() => monthOptions(newest), [newest]);
   const range = useMemo(() => periodRange(period, today), [period, today]);
   const expenses = useMemo(() => entries.filter((e) => e.kind === 'expense'), [entries]);
   const rows = useMemo(
