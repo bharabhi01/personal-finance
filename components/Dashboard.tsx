@@ -2,7 +2,7 @@
 import { useMemo, useState } from 'react';
 import { categories } from '@/lib/validation.mjs';
 import { money, todayIST } from '@/lib/format';
-import { accountBalances, categoryTotals, dailySeries, filterRows, latestMonth, monthOptions, moneyFlow, periodRange, subscriptions, summarize } from '@/lib/summary';
+import { accountBalances, categoryTotals, creditCardSpend, dailySeries, filterRows, latestMonth, monthOptions, moneyFlow, periodRange, subscriptions, summarize } from '@/lib/summary';
 import type { Entry, Transaction } from '@/lib/store';
 import Activity from '@/components/Activity';
 import Balances from '@/components/Balances';
@@ -49,6 +49,7 @@ export default function Dashboard({ initial, loadError, canSignOut }: { initial:
   );
   const inPeriod = useMemo(() => filterRows(entries, range, 'All'), [entries, range]);
   const flow = useMemo(() => moneyFlow(inPeriod), [inPeriod]);
+  const cardSpend = useMemo(() => creditCardSpend(inPeriod), [inPeriod]);
   const balances = useMemo(() => accountBalances(entries), [entries]);
   const activity = useMemo(
     () => inPeriod.filter((e) => e.kind !== 'expense').sort((a, b) => b.date.localeCompare(a.date) || b.created_at.localeCompare(a.created_at)),
@@ -160,7 +161,7 @@ export default function Dashboard({ initial, loadError, canSignOut }: { initial:
               </select>
             </label>
           </div>
-          <Balances data={balances} />
+          <Balances data={balances} cardSpend={cardSpend} />
         </div>
         <Mosaic flow={flow} stats={stats} subs={subs} />
       </div>
@@ -183,7 +184,7 @@ export default function Dashboard({ initial, loadError, canSignOut }: { initial:
         <RecentExpenses rows={rows} onEdit={openForm} onDelete={(e) => { setError(''); setDeleting(e); }} onExport={exportCsv} />
         <div className="stack">
           <Subscriptions items={subs} />
-          <Activity rows={activity} savings={{ left: flow.savings, moved: flow.savingsMoved }} onDelete={(t) => { setError(''); setDeleting(t); }} />
+          <Activity rows={activity} savings={flow.savings} onDelete={(t) => { setError(''); setDeleting(t); }} />
         </div>
       </div>
 

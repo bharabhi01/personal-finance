@@ -23,7 +23,6 @@ export default function Mosaic({ flow, stats, subs }: { flow: ReturnType<typeof 
       <section className="tile tile-amber">
         <span className="label">Savings</span>
         <strong className="big">{money(flow.savings)}</strong>
-        <span className="sub">{flow.savingsMoved > 0 ? `left of ${money(flow.savingsMoved)} moved in` : 'nothing moved in yet'}</span>
       </section>
       <section className="tile tile-moss">
         <span className="label">Subscriptions</span>

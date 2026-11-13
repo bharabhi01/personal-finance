@@ -115,10 +115,10 @@ export function subscriptions(rows: Row[]): Subscription[] {
 export function moneyFlow(rows: LedgerRow[]) {
   const sum = (kind: string) => rows.filter((r) => r.kind === kind).reduce((a, r) => a + r.amount_paise, 0);
   const income = sum('income'), expenses = sum('expense'), investments = sum('investment');
-  const { moved: savingsMoved, left: savings } = savingsPot(rows);
+  const savings = savingsPot(rows);
   const share = (value: number) => (income > 0 ? value / income : null);
   return {
-    income, expenses, investments, savings, savingsMoved,
+    income, expenses, investments, savings,
     left: income - expenses - investments - savings,
     shares: { expenses: share(expenses), investments: share(investments), savings: share(savings) },
   };
@@ -163,13 +163,17 @@ function savingsPot(rows: LedgerRow[]) {
     const key = bankKey(r.to_bank), pot = pots.get(key);
     pots.set(key, { moved: (pot?.moved ?? 0) + r.amount_paise, since: pot && pot.since < r.date ? pot.since : r.date });
   }
-  let moved = 0, left = 0;
+  let left = 0;
   for (const [key, pot] of pots) {
     const spent = rows
       .filter((r) => r.bank && bankKey(r.bank) === key && ['expense', 'investment', 'savings'].includes(r.kind) && r.date >= pot.since)
       .reduce((sum, r) => sum + r.amount_paise, 0);
-    moved += pot.moved;
     left += Math.max(0, pot.moved - spent);
   }
-  return { moved, left };
+  return left;
+}
+
+/** What was spent on credit cards (banks named "… Credit Card") across the given rows. */
+export function creditCardSpend(rows: LedgerRow[]) {
+  return rows.filter((r) => r.kind === 'expense' && /credit card/i.test(r.bank ?? '')).reduce((sum, r) => sum + r.amount_paise, 0);
 }

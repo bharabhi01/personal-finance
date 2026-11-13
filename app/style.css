@@ -72,6 +72,7 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .hero-number{font-size:clamp(2.4rem,5vw,3.8rem);letter-spacing:-.04em;line-height:1.1;margin:2px 0 0;overflow-wrap:anywhere}
 .accounts{margin-top:12px}
 .total-label{margin-top:auto;padding-top:22px}
+.card-spend{margin-top:18px}
 .accounts li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
 
 /* mosaic tiles */
