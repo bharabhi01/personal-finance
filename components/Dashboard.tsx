@@ -183,7 +183,7 @@ export default function Dashboard({ initial, loadError, canSignOut }: { initial:
         <RecentExpenses rows={rows} onEdit={openForm} onDelete={(e) => { setError(''); setDeleting(e); }} onExport={exportCsv} />
         <div className="stack">
           <Subscriptions items={subs} />
-          <Activity rows={activity} onDelete={(t) => { setError(''); setDeleting(t); }} />
+          <Activity rows={activity} savings={{ left: flow.savings, moved: flow.savingsMoved }} onDelete={(t) => { setError(''); setDeleting(t); }} />
         </div>
       </div>
 

@@ -69,15 +69,10 @@ button:disabled{opacity:.5;cursor:not-allowed}
 .orb{position:absolute;z-index:-1;right:-14%;top:-8%;width:78%;aspect-ratio:1;border-radius:50%;filter:blur(46px);opacity:.75;
   background:radial-gradient(circle at 35% 35%,#c8f23a 0,transparent 55%),radial-gradient(circle at 70% 60%,#f2a65a 0,transparent 55%),radial-gradient(circle at 30% 80%,#6fb083 0,transparent 60%)}
 :root[data-theme=dark] .orb{opacity:.45}
-.hero-number{font-size:clamp(2.4rem,5vw,3.8rem);letter-spacing:-.04em;line-height:1.1;margin:2px 0 18px;overflow-wrap:anywhere}
-.pin{position:relative;margin:0 0 22px 7px;padding:0 0 0 18px;border-left:1px solid var(--muted);display:flex;flex-direction:column}
-.pin-dot{position:absolute;left:-6px;top:-2px;width:11px;height:11px;border-radius:50%;background:var(--lime);box-shadow:0 0 0 4px rgba(200,242,58,.28),0 0 14px var(--lime)}
-.pin-value{font-size:1.8rem;letter-spacing:-.02em;line-height:1.2}
-.accounts{margin-top:auto}
+.hero-number{font-size:clamp(2.4rem,5vw,3.8rem);letter-spacing:-.04em;line-height:1.1;margin:2px 0 0;overflow-wrap:anywhere}
+.accounts{margin-top:12px}
+.total-label{margin-top:auto;padding-top:22px}
 .accounts li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
-.accounts li>div{display:flex;flex-direction:column;min-width:0}
-.account-name{display:flex;align-items:center;gap:8px}
-.account-name .tag{margin:0}
 
 /* mosaic tiles */
 .mosaic{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:12px;min-width:0}
@@ -153,7 +148,7 @@ select{appearance:none;padding-right:38px;background-image:var(--chevron);backgr
 .amount{font-weight:600;white-space:nowrap}
 .row-actions{display:flex;gap:2px}
 .hint{background:var(--accent-soft);color:var(--hint-ink);border-radius:14px;padding:10px 14px;font-size:13px;margin-bottom:14px}
-.savings-tag,.kind-savings{background:var(--green-soft);color:var(--green-ink)}
+.kind-savings{background:var(--green-soft);color:var(--green-ink)}
 .kind-income{background:var(--income-soft);color:var(--income-ink)}
 .kind-investment{background:var(--accent-soft);color:var(--accent)}
 .kind-balance{background:var(--line);color:var(--muted)}
@@ -190,3 +185,6 @@ select{appearance:none;padding-right:38px;background-image:var(--chevron);backgr
   .expenses li{flex-wrap:wrap}
   .row-actions{margin-left:auto}
 }
+
+.savings-line{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin:0 0 12px}
+.savings-line .tag{margin:0}

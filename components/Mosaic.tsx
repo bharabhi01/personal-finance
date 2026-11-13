@@ -21,9 +21,9 @@ export default function Mosaic({ flow, stats, subs }: { flow: ReturnType<typeof 
         <Arc share={stats.top?.share ?? 0} className="art-bottom" />
       </section>
       <section className="tile tile-amber">
-        <span className="label">Average expense</span>
-        <strong className="big">{money(stats.average)}</strong>
-        <span className="sub">per expense</span>
+        <span className="label">Savings</span>
+        <strong className="big">{money(flow.savings)}</strong>
+        <span className="sub">{flow.savingsMoved > 0 ? `left of ${money(flow.savingsMoved)} moved in` : 'nothing moved in yet'}</span>
       </section>
       <section className="tile tile-moss">
         <span className="label">Subscriptions</span>

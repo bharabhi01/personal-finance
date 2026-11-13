@@ -5,9 +5,9 @@ A single-user Next.js expense tracker backed by Supabase (Auth + Postgres). You 
 ## Dashboard
 
 - **Filters:** period (any month, last 3/6/9/12 months, all time) and expense category.
-- **Total balance:** your bank balances, with the savings accounts called out.
+- **Balances:** each bank with a reported balance, then the total.
 - **Where your income went:** expenses, investments and savings as a share of income for the period.
-- **Tiles:** total spent, top category, average expense and monthly subscriptions.
+- **Tiles:** total spent, top category, savings and monthly subscriptions.
 - **Charts and lists:** daily spending, category breakdown, recent expenses (edit, delete, CSV export), subscriptions, and income, investments, savings and balance entries.
 - **Top bar:** icon buttons for the dark/light toggle, sign out (production only) and add expense. Dark mode is the default; the choice is remembered in the browser.
 - Expenses can be added by hand. Income, investments, savings and balances are entered through Instinct and can be deleted on the dashboard.
@@ -44,7 +44,7 @@ A single-user Next.js expense tracker backed by Supabase (Auth + Postgres). You 
 - `amount` is in rupees (at most two decimals). `date` (YYYY-MM-DD) is optional and defaults to today in IST. `bank` is optional on expenses, income and investments, but then that money can't move a bank balance.
 - Expense `category` must be one of: Housing, Bills, Food, Groceries, Shopping, Subscriptions, Travel, Health, Other (use Other only when nothing fits; Instinct should ask instead of guessing). Rent, electricity and furniture rent are Housing; credit card bills are Bills; Swiggy, Zomato and eating out are Food; groceries are Groceries. Recurring services such as Claude or Netflix go under Subscriptions; they populate "My subscriptions".
 - **Use one spelling per bank** ("Kotak Bank", not "Kotak" and "kotak bank" in different messages). Matching ignores case and surrounding spaces, but not other differences.
-- `savings` is a transfer between your own banks. The `to_bank` becomes a savings account, and the dashboard's Savings figure is the live balance of those accounts. Under it, the dashboard shows how much is left of the money you moved in: the transfers into a savings bank, less the expenses, investments and transfers out of that bank since the first transfer.
+- `savings` is a transfer between your own banks. It moves money between the two bank balances and is never an expense. The Savings tile and the savings line on the income card show how much is left of the money you moved in: the period's transfers into a savings bank, less the expenses, investments and transfers out of that bank since the first transfer.
 - `balances` is the exact amount in a bank right now. From then on, the dashboard's balance for that bank moves with everything logged afterwards: income adds, expenses and investments subtract, a savings transfer subtracts from `from_bank` and adds to `to_bank`. Entries dated before the report, or entered before it, are treated as already included. Send a balance as its own message, not in the same message as entries that should change it.
 - The dashboard shows expenses, investments and savings as a percentage of income for the selected period, so log income to see percentages. A transfer between your banks is not an expense: Savings there is what is left of the period's transfers into a savings bank after spending from it, so money spent from savings counts once, as an expense, and shrinks Savings.
 - One message is saved all-or-nothing. Success is `201 {"status":"saved","entries":[…]}`; confirm to the user only after this response.

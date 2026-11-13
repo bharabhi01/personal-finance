@@ -26,11 +26,11 @@ test('Filtering is inclusive on dates and by category',()=>{
  assert.deepEqual(filterRows(rows,october,'Bills').map(r=>r.amount_paise),[4]);
  assert.equal(filterRows(rows,periodRange('all',today),'All').length,4);
 });
-test('Summary: total, count, average, top category',()=>{
+test('Summary: total, count, top category',()=>{
  const rows=[row('2026-10-01',100,'Food'),row('2026-10-02',300,'Travel'),row('2026-10-03',200,'Travel')];
  const s=summarize(rows);
- assert.equal(s.total,600);assert.equal(s.count,3);assert.equal(s.average,200);assert.deepEqual(s.top,{name:'Travel',value:500,share:500/600});
- assert.deepEqual(summarize([]),{total:0,count:0,average:0,top:null});
+ assert.equal(s.total,600);assert.equal(s.count,3);assert.deepEqual(s.top,{name:'Travel',value:500,share:500/600});
+ assert.deepEqual(summarize([]),{total:0,count:0,top:null});
  assert.deepEqual(categoryTotals(rows).map(c=>c.name),['Travel','Food']);
 });
 test('Daily series covers every day and sums same-day expenses',()=>{
@@ -59,9 +59,9 @@ test('Money flow: shares are fractions of income, with the remainder unallocated
 });
 test('Money flow: spending from a savings bank counts as an expense and shrinks savings, not twice',()=>{
  const f=moneyFlow([led('income','2026-10-01',100000,'Axis Bank'),led('savings','2026-10-07',30000,'Axis Bank','Kotak Bank'),led('expense','2026-10-09',5000,'Kotak Bank'),led('expense','2026-10-10',2000,'Axis Bank')]);
- assert.deepEqual([f.income,f.expenses,f.savings,f.left],[100000*100,7000*100,25000*100,68000*100]);
+ assert.deepEqual([f.income,f.expenses,f.savings,f.savingsMoved,f.left],[100000*100,7000*100,25000*100,30000*100,68000*100]);
 });
-test('Balances: reported balance, then later entries move it; savings accounts follow transfers in',()=>{
+test('Balances: reported balance, then later entries move it; a transfer moves money between banks',()=>{
  const rows=[
   led('balance','2026-10-10',85000,'Kotak Bank',null,'2026-10-10T20:00:00.000Z'),
   led('balance','2026-10-10',40000,'Axis Bank',null,'2026-10-10T20:00:01.000Z'),
@@ -71,9 +71,8 @@ test('Balances: reported balance, then later entries move it; savings accounts f
   led('investment','2026-10-15',10000,'Axis Bank',null,'2026-10-15T09:00:00.000Z'),
  ];
  const b=accountBalances(rows);
- assert.deepEqual(b.accounts.map(a=>[a.name,a.balance,a.savings]),[['Kotak Bank',85000*100+30000*100-2300*100,true],['Axis Bank',(40000-30000+5000-10000)*100,false]]);
- assert.equal(b.savingsTotal,112700*100);assert.equal(b.total,(112700+5000)*100);assert.equal(b.savingsUnknown,0);
- assert.deepEqual([b.savingsMoved,b.savingsLeft],[30000*100,(30000-2300)*100]);
+ assert.deepEqual(b.accounts.map(a=>[a.name,a.balance]),[['Axis Bank',(40000-30000+5000-10000)*100],['Kotak Bank',85000*100+30000*100-2300*100]]);
+ assert.equal(b.total,(112700+5000)*100);
 });
 test('Savings pot: transfers in, less spending from that bank since the first transfer, never below zero',()=>{
  const rows=[
@@ -83,11 +82,11 @@ test('Savings pot: transfers in, less spending from that bank since the first tr
   led('expense','2026-10-06',2000,'Kotak Bank'),led('investment','2026-10-07',5000,'KOTAK BANK'),
   led('income','2026-10-08',99999,'Kotak Bank'),led('expense','2026-10-09',777,'Axis Bank'),
  ];
- const b=accountBalances(rows);
- assert.deepEqual([b.savingsMoved,b.savingsLeft],[40000*100,33000*100]);
- const drained=accountBalances([led('savings','2026-10-05',1000,'Axis Bank','Kotak Bank'),led('expense','2026-10-06',4000,'Kotak Bank')]);
- assert.deepEqual([drained.savingsMoved,drained.savingsLeft],[1000*100,0]);
- assert.deepEqual([accountBalances([]).savingsMoved,accountBalances([]).savingsLeft],[0,0]);
+ const f=moneyFlow(rows);
+ assert.deepEqual([f.savingsMoved,f.savings],[40000*100,33000*100]);
+ const drained=moneyFlow([led('savings','2026-10-05',1000,'Axis Bank','Kotak Bank'),led('expense','2026-10-06',4000,'Kotak Bank')]);
+ assert.deepEqual([drained.savingsMoved,drained.savings],[1000*100,0]);
+ assert.deepEqual([moneyFlow([]).savingsMoved,moneyFlow([]).savings],[0,0]);
 });
 test('Balances: older, same-day-earlier and backdated entries are already in the reported figure; the newest report wins',()=>{
  const rows=[
@@ -101,8 +100,7 @@ test('Balances: older, same-day-earlier and backdated entries are already in the
  const newer=[...rows,led('balance','2026-10-12',40000,'KOTAK BANK',null,'2026-10-12T10:00:00.000Z')];
  assert.deepEqual(accountBalances(newer).accounts.map(a=>[a.name,a.balance]),[['KOTAK BANK',4000000]]);
 });
-test('Balances: banks without a reported balance show null and are left out of totals',()=>{
+test('Balances: banks without a reported balance are left out',()=>{
  const b=accountBalances([led('expense','2026-10-02',100,'HDFC Bank'),led('savings','2026-10-03',500,'HDFC Bank','Kotak Bank')]);
- assert.deepEqual(b.accounts.map(a=>[a.name,a.balance,a.savings]),[['Kotak Bank',null,true],['HDFC Bank',null,false]]);
- assert.deepEqual([b.total,b.savingsTotal,b.savingsUnknown],[0,0,1]);assert.deepEqual(accountBalances([]).accounts,[]);
+ assert.deepEqual([b.accounts,b.total],[[],0]);assert.deepEqual(accountBalances([]).accounts,[]);
 });

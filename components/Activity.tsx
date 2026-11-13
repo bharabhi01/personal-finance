@@ -4,10 +4,17 @@ import type { Transaction } from '@/lib/store';
 const LABEL: Record<string, string> = { income: 'Income', investment: 'Investment', savings: 'Savings', balance: 'Balance' };
 const RECENT = 8;
 
-export default function Activity({ rows, onDelete }: { rows: Transaction[]; onDelete: (t: Transaction) => void }) {
+export default function Activity({ rows, savings, onDelete }: { rows: Transaction[]; savings: { left: number; moved: number }; onDelete: (t: Transaction) => void }) {
   return (
     <section className="card">
       <header className="card-head"><h2>Income, investments &amp; savings</h2></header>
+      {savings.moved > 0 && (
+        <div className="savings-line">
+          <span className="tag kind-savings">Savings</span>
+          <strong>{money(savings.left)}</strong>
+          <span className="muted">left of {money(savings.moved)} moved in</span>
+        </div>
+      )}
       {rows.length === 0 && <p className="empty">Nothing logged in this period.</p>}
       <ul className="expenses">
         {rows.slice(0, RECENT).map((t) => (
