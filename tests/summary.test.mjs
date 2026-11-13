@@ -57,6 +57,10 @@ test('Money flow: shares are fractions of income, with the remainder unallocated
  assert.deepEqual(f.shares,{expenses:0.25,investments:0.2,savings:0.3});
  const none=moneyFlow([led('expense','2026-10-02',500)]);assert.equal(none.shares.expenses,null);assert.equal(none.left,-50000);
 });
+test('Money flow: spending from a savings bank counts as an expense and shrinks savings, not twice',()=>{
+ const f=moneyFlow([led('income','2026-10-01',100000,'Axis Bank'),led('savings','2026-10-07',30000,'Axis Bank','Kotak Bank'),led('expense','2026-10-09',5000,'Kotak Bank'),led('expense','2026-10-10',2000,'Axis Bank')]);
+ assert.deepEqual([f.income,f.expenses,f.savings,f.left],[100000*100,7000*100,25000*100,68000*100]);
+});
 test('Balances: reported balance, then later entries move it; savings accounts follow transfers in',()=>{
  const rows=[
   led('balance','2026-10-10',85000,'Kotak Bank',null,'2026-10-10T20:00:00.000Z'),

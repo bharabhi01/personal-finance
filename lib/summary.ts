@@ -109,10 +109,14 @@ export function subscriptions(rows: Row[]): Subscription[] {
     .sort((a, b) => a.next.localeCompare(b.next));
 }
 
-/** Where income went in a period. Shares are fractions of income (null when no income was logged). */
+/**
+ * Where income went in a period. A transfer between your own banks is not spending: savings is what is left of
+ * the transfers into savings banks after spending from them, so money spent from savings counts once, as an
+ * expense. Shares are fractions of income (null when no income was logged).
+ */
 export function moneyFlow(rows: LedgerRow[]) {
   const sum = (kind: string) => rows.filter((r) => r.kind === kind).reduce((a, r) => a + r.amount_paise, 0);
-  const income = sum('income'), expenses = sum('expense'), investments = sum('investment'), savings = sum('savings');
+  const income = sum('income'), expenses = sum('expense'), investments = sum('investment'), savings = savingsPot(rows).left;
   const share = (value: number) => (income > 0 ? value / income : null);
   return {
     income, expenses, investments, savings,
