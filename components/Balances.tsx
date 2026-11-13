@@ -18,6 +18,7 @@ export default function Balances({ data }: { data: Balances }) {
               <span className="pin-dot" aria-hidden="true" />
               <span className="label">Savings</span>
               <strong className="pin-value">{money(data.savingsTotal)}</strong>
+              {data.savingsMoved > 0 && <span className="muted">{money(data.savingsLeft)} left of the {money(data.savingsMoved)} you moved in</span>}
               {data.savingsUnknown > 0 && <span className="muted">+ {data.savingsUnknown} savings account without a balance</span>}
             </div>
           )}

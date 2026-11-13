@@ -160,10 +160,35 @@ export function accountBalances(rows: LedgerRow[]) {
     .map(({ name, balance, savings, asOf }) => ({ name, balance, savings, asOf }))
     .sort((a, b) => Number(b.savings) - Number(a.savings) || a.name.localeCompare(b.name));
   const known = list.filter((a) => a.balance !== null);
+  const pot = savingsPot(rows);
   return {
     accounts: list,
     total: known.reduce((sum, a) => sum + a.balance!, 0),
     savingsTotal: known.filter((a) => a.savings).reduce((sum, a) => sum + a.balance!, 0),
     savingsUnknown: list.filter((a) => a.savings && a.balance === null).length,
+    savingsMoved: pot.moved,
+    savingsLeft: pot.left,
   };
+}
+
+/**
+ * What is left of the money transferred into savings accounts: each account's transfers in, less the
+ * expenses, investments and transfers out of that bank dated on/after its first transfer (never below zero).
+ */
+function savingsPot(rows: LedgerRow[]) {
+  const pots = new Map<string, { moved: number; since: string }>();
+  for (const r of rows) {
+    if (r.kind !== 'savings' || !r.to_bank) continue;
+    const key = bankKey(r.to_bank), pot = pots.get(key);
+    pots.set(key, { moved: (pot?.moved ?? 0) + r.amount_paise, since: pot && pot.since < r.date ? pot.since : r.date });
+  }
+  let moved = 0, left = 0;
+  for (const [key, pot] of pots) {
+    const spent = rows
+      .filter((r) => r.bank && bankKey(r.bank) === key && ['expense', 'investment', 'savings'].includes(r.kind) && r.date >= pot.since)
+      .reduce((sum, r) => sum + r.amount_paise, 0);
+    moved += pot.moved;
+    left += Math.max(0, pot.moved - spent);
+  }
+  return { moved, left };
 }

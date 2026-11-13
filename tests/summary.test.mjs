@@ -69,6 +69,21 @@ test('Balances: reported balance, then later entries move it; savings accounts f
  const b=accountBalances(rows);
  assert.deepEqual(b.accounts.map(a=>[a.name,a.balance,a.savings]),[['Kotak Bank',85000*100+30000*100-2300*100,true],['Axis Bank',(40000-30000+5000-10000)*100,false]]);
  assert.equal(b.savingsTotal,112700*100);assert.equal(b.total,(112700+5000)*100);assert.equal(b.savingsUnknown,0);
+ assert.deepEqual([b.savingsMoved,b.savingsLeft],[30000*100,(30000-2300)*100]);
+});
+test('Savings pot: transfers in, less spending from that bank since the first transfer, never below zero',()=>{
+ const rows=[
+  led('expense','2026-10-01',900,'Kotak Bank'),
+  led('savings','2026-10-05',30000,'Axis Bank','Kotak Bank'),
+  led('savings','2026-10-20',10000,'Axis Bank','kotak bank'),
+  led('expense','2026-10-06',2000,'Kotak Bank'),led('investment','2026-10-07',5000,'KOTAK BANK'),
+  led('income','2026-10-08',99999,'Kotak Bank'),led('expense','2026-10-09',777,'Axis Bank'),
+ ];
+ const b=accountBalances(rows);
+ assert.deepEqual([b.savingsMoved,b.savingsLeft],[40000*100,33000*100]);
+ const drained=accountBalances([led('savings','2026-10-05',1000,'Axis Bank','Kotak Bank'),led('expense','2026-10-06',4000,'Kotak Bank')]);
+ assert.deepEqual([drained.savingsMoved,drained.savingsLeft],[1000*100,0]);
+ assert.deepEqual([accountBalances([]).savingsMoved,accountBalances([]).savingsLeft],[0,0]);
 });
 test('Balances: older, same-day-earlier and backdated entries are already in the reported figure; the newest report wins',()=>{
  const rows=[

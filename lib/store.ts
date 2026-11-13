@@ -12,6 +12,7 @@ export type Transaction = Entry & {id:string; source:string; created_at:string};
 export type SaveResult = {status:'saved'|'already_saved'; entries:Transaction[]};
 export type Store = {
  list():Promise<Transaction[]>;
+ get(id:string):Promise<Transaction>;
  create(entry:Entry):Promise<Transaction>;
  /** Edits a row without changing its kind. */
  update(id:string,entry:Entry):Promise<Transaction>;
@@ -46,6 +47,11 @@ function supabaseStore(client:SupabaseClient,userId:string):Store {
     total=count; rows.push(...data);
     if (rows.length>=total! || data.length===0) return rows;
    }
+  },
+  async get(id) {
+   const {data,error}=await client.from('transactions').select('*').eq('id',id).eq('user_id',userId).maybeSingle();
+   if (error || !data) throw new Error('No entry with that id.');
+   return data;
   },
   async create(entry) {
    const {data,error}=await client.from('transactions').insert({...entry,user_id:userId,source:'app'}).select().single();
@@ -121,6 +127,11 @@ const writeDev=(rows:DevRow[])=>writeFile(DEV_FILE,JSON.stringify(rows,null,1));
 const fileStore:Store = {
  async list() {
   return (await readDev()).sort((a,b)=>b.date.localeCompare(a.date) || a.id.localeCompare(b.id));
+ },
+ async get(id) {
+  const row=(await readDev()).find(r=>r.id===id);
+  if (!row) throw new Error('No entry with that id.');
+  return row;
  },
  async create(entry) {
   const rows=await readDev(), created={...entry,id:randomUUID(),source:'app',created_at:new Date().toISOString()};

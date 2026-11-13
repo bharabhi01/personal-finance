@@ -1,4 +1,4 @@
-import {test} from 'node:test';import assert from 'node:assert/strict';import {validateEntry,validateInstinctBatch,sameEntries} from '../lib/validation.mjs';
+import {test} from 'node:test';import assert from 'node:assert/strict';import {validateEntry,validateInstinctBatch,sameEntries,validateInstinctChange,instinctView} from '../lib/validation.mjs';
 const expense={amount_paise:18000,date:'2026-10-13',description:'Dosa',category:'Food'};
 const full=(over={})=>({kind:'expense',to_bank:null,bank:null,...expense,...over});
 test('Valid integer-paise expense (kind defaults to expense)',()=>assert.deepEqual(validateEntry(expense),full()));
@@ -48,4 +48,16 @@ test('Retries match only when every field is identical',()=>{
  const a=validateEntry(expense),b=validateEntry({...expense,description:'Cab',bank:'UPI'});
  assert.ok(sameEntries([{...a,id:1},{...b,id:2}],[a,b]));
  assert.ok(!sameEntries([a,b],[a]));assert.ok(!sameEntries([a,b],[a,{...b,amount_paise:1}]));assert.ok(!sameEntries([a,b],[a,{...b,bank:null}]));assert.ok(!sameEntries([a],[{...a,kind:'income'}]));
+});
+test('Instinct edit: change only the fields sent, keep the kind, validate the result',()=>{
+ const saved={id:'x',kind:'expense',amount_paise:230000,date:'2026-10-24',description:'Claude Subscription',category:'Subscriptions',bank:'Kotak Bank',to_bank:null};
+ assert.deepEqual(validateInstinctChange(saved,{amount:2500.5,bank:'Axis Bank'}),{kind:'expense',amount_paise:250050,date:'2026-10-24',description:'Claude Subscription',category:'Subscriptions',bank:'Axis Bank',to_bank:null});
+ assert.throws(()=>validateInstinctChange(saved,{}),/at least one field/);
+ assert.throws(()=>validateInstinctChange(saved,{kind:'income'}),/Unknown field "kind"/);
+ assert.throws(()=>validateInstinctChange(saved,{category:'Fun'}),/Category/);
+ assert.throws(()=>validateInstinctChange(saved,{amount:0}));
+ const transfer={kind:'savings',amount_paise:3000000,date:'2026-11-01',description:'Savings transfer',category:null,bank:'Axis Bank',to_bank:'Kotak Bank'};
+ assert.equal(validateInstinctChange(transfer,{from_bank:'HDFC Bank'}).bank,'HDFC Bank');
+ assert.throws(()=>validateInstinctChange(transfer,{to_bank:'axis bank'}),/different banks/);
+ assert.deepEqual(instinctView({...saved,created_at:'t',source:'whatsapp'}),{id:'x',kind:'expense',amount:2300,date:'2026-10-24',description:'Claude Subscription',category:'Subscriptions',bank:'Kotak Bank',to_bank:null,created_at:'t'});
 });
