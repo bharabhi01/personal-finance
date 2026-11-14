@@ -25,8 +25,8 @@ export type Store = {
 export async function getStore():Promise<Store|null> {
  if (isDev) return fileStore;
  const client=await db();
- const {data:{user}}=await client.auth.getUser();
- return user ? supabaseStore(client,user.id) : null;
+ const {data}=await client.auth.getClaims();
+ return data ? supabaseStore(client,data.claims.sub) : null;
 }
 
 /** The owner's ledger for server-to-server calls (Instinct), which have no browser session. */
