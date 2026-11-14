@@ -24,7 +24,7 @@ A single-user Next.js expense tracker backed by Supabase (Auth + Postgres). You 
 2. Create your user in the Supabase dashboard, then turn off public sign-ups (Auth settings). Copy the user's UUID.
 3. Set the variables in `.env.example` in Vercel: the Supabase URL and anon key, plus `SUPABASE_SERVICE_ROLE_KEY`, `OWNER_USER_ID` (the UUID) and `INSTINCT_API_KEY` (any long random string, e.g. `openssl rand -hex 32`).
 4. Production shows an email/password login at `/login`. To change your password, use the Supabase dashboard.
-5. Pushing to `main` deploys to production automatically (the GitHub repo is connected to the Vercel project). To deploy the working folder without pushing, run `npx vercel deploy --prod`. Turn on Speed Insights once in the Vercel project's Speed Insights tab.
+5. Pushing to `main` deploys to production automatically (the GitHub repo is connected to the Vercel project). To deploy the working folder without pushing, run `npx vercel deploy --prod`. `vercel.json` runs the server in Mumbai (`bom1`), next to the Supabase database (`ap-south-1`); keep the two in the same region, since every page load makes several database calls. Turn on Speed Insights once in the Vercel project's Speed Insights tab.
 
 ## Instinct AI integration
 
