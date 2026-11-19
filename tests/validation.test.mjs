@@ -27,7 +27,7 @@ test('Savings move between two different banks; balances need a bank and may be 
 });
 test('Instinct message: "Claude Subscription Rs 2300 Kotak Bank"',()=>{
  const batch=validateInstinctBatch({message_id:'wamid.1',expenses:[{amount:2300,description:'Claude Subscription',category:'Subscriptions',bank:'Kotak Bank'}]},'2026-10-24');
- assert.deepEqual(batch,{message_id:'wamid.1',entries:[{kind:'expense',amount_paise:230000,date:'2026-10-24',description:'Claude Subscription',category:'Subscriptions',bank:'Kotak Bank',to_bank:null}]});
+ assert.deepEqual(batch,{message_id:'wamid.1',entries:[{kind:'expense',amount_paise:230000,date:'2026-10-24',description:'Claude Subscription',category:'Subscriptions',bank:'Kotak Bank',to_bank:null}],frequencies:[]});
 });
 test('Instinct mixed message keeps list order: expenses, income, investments, savings, balances',()=>{
  const {entries}=validateInstinctBatch({message_id:'m',balances:[{bank:'Kotak Bank',amount:85000}],savings:[{amount:30000,from_bank:'Axis Bank',to_bank:'Kotak Bank'}],investments:[{amount:20000,description:'SIP 1'}],income:[{amount:150000,description:'Salary',bank:'Kotak Bank'}],expenses:[{amount:180,description:'Dosa',category:'Food'}]},'2026-10-24');
@@ -64,4 +64,10 @@ test('Instinct edit: change only the fields sent, keep the kind, validate the re
 test('Subscription frequency: name is trimmed and lower-cased, frequency must be known',()=>{
  assert.deepEqual(validateFrequency({name:'  Bumble Subscription ',frequency:'weekly'}),{name:'bumble subscription',frequency:'weekly'});
  for(const bad of [{name:'',frequency:'weekly'},{name:'x',frequency:'daily'},{frequency:'monthly'},null])assert.throws(()=>validateFrequency(bad));
+});
+test('Instinct: a Subscriptions expense may set its frequency; other expenses may not',()=>{
+ const batch=validateInstinctBatch({message_id:'m',expenses:[{amount:399,description:'Bumble Subscription',category:'Subscriptions',frequency:'weekly'},{amount:5,description:'x',category:'Food'}]},'2026-10-24');
+ assert.deepEqual(batch.frequencies,[{name:'bumble subscription',frequency:'weekly'}]);
+ assert.throws(()=>validateInstinctBatch({message_id:'m',expenses:[{amount:5,description:'x',category:'Food',frequency:'weekly'}]},'2026-10-24'),/expenses #1: Only a Subscriptions/);
+ assert.throws(()=>validateInstinctBatch({message_id:'m',expenses:[{amount:5,description:'x',category:'Subscriptions',frequency:'daily'}]},'2026-10-24'),/expenses #1: Frequency/);
 });

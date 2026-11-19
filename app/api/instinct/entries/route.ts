@@ -9,7 +9,8 @@ export async function POST(req:Request){
  if (!instinctAuthorized(req)) return unauthorized();
  try{
   const input=validateInstinctBatch(await req.json(),todayIST());
-  const result=await getOwnerStore().saveFromMessage(input.message_id,input.entries);
+  const store=getOwnerStore(), result=await store.saveFromMessage(input.message_id,input.entries);
+  for (const {name,frequency} of input.frequencies) await store.setFrequency(name,frequency);
   return Response.json(result,{status:result.status==='saved'?201:200});
  }catch(e){return Response.json({error:e instanceof Error?e.message:'Invalid request.'},{status:400});}
 }
