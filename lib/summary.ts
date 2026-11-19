@@ -1,5 +1,3 @@
-import { recurringCategories } from './validation.mjs';
-
 /** The fields expense summaries read. */
 export type Row = { date: string; amount_paise: number; category: string | null; description: string; bank: string | null };
 /** A full ledger row, needed for money flow and balances. */
@@ -111,15 +109,15 @@ export function nextCharge(date: string, frequency: Frequency) {
 export const subscriptionKey = (name: string) => name.trim().toLowerCase();
 
 /**
- * Each distinct recurring expense by its latest charge: every Subscriptions expense, plus Insurance and Health
- * expenses that have a schedule. The schedule (keyed by subscriptionKey) defaults to monthly and active;
+ * Each distinct recurring expense by its latest charge: every Subscriptions expense, plus expenses of any
+ * other category that have a schedule. The schedule (keyed by subscriptionKey) defaults to monthly and active;
  * monthly_paise is the cost per month. Active ones come first, soonest due first, then paused, then cancelled.
  */
 export function subscriptions(rows: Row[], schedules: Record<string, Partial<Schedule>> = {}): Subscription[] {
   const latest = new Map<string, Row>();
   for (const r of rows) {
     const key = subscriptionKey(r.description);
-    if (r.category !== 'Subscriptions' && !(recurringCategories.includes(r.category ?? '') && schedules[key])) continue;
+    if (r.category !== 'Subscriptions' && !schedules[key]) continue;
     const current = latest.get(key);
     if (!current || r.date > current.date) latest.set(key, r);
   }

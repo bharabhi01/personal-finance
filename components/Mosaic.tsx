@@ -26,7 +26,7 @@ export default function Mosaic({ flow, stats, subs }: { flow: ReturnType<typeof 
         <strong className="big">{money(flow.savings)}</strong>
       </section>
       <section className="tile tile-moss">
-        <span className="label">Subscriptions</span>
+        <span className="label">Recurring</span>
         <strong className="big">{money(monthly)}</strong>
         <span className="sub">per month · {active.length} active</span>
       </section>

@@ -1,3 +1,7 @@
+import type { Frequency } from '@/lib/summary';
+
+export const FREQUENCY_LABEL: Record<Frequency, string> = { weekly: 'Weekly', monthly: 'Monthly', quarterly: 'Quarterly', 'half-yearly': 'Every 6 months', yearly: 'Yearly' };
+
 export const money = (paise: number) =>
   new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 2 }).format(paise / 100);
 

@@ -2,7 +2,7 @@
 import { useMemo, useState } from 'react';
 import { categories } from '@/lib/validation.mjs';
 import { money, todayIST } from '@/lib/format';
-import { accountBalances, categoryTotals, creditCardSpend, dailySeries, filterRows, latestMonth, monthOptions, moneyFlow, periodRange, subscriptionKey, subscriptions, summarize, type Schedule } from '@/lib/summary';
+import { accountBalances, categoryTotals, creditCardSpend, dailySeries, filterRows, latestMonth, monthOptions, moneyFlow, periodRange, subscriptionKey, subscriptions, summarize, type Frequency, type Schedule } from '@/lib/summary';
 import type { Entry, Schedules, Transaction } from '@/lib/store';
 import Activity from '@/components/Activity';
 import Balances from '@/components/Balances';
@@ -73,9 +73,15 @@ export default function Dashboard({ initial, initialSchedules, loadError, canSig
     setBusy(false);
   }
 
-  const save = (entry: Entry) =>
+  /** The frequency an expense repeats at: its saved schedule, else monthly for Subscriptions, else ''. */
+  const repeatsOf = (e: { description: string; category: string | null }): Frequency | '' =>
+    schedules[subscriptionKey(e.description)]?.frequency ?? (e.category === 'Subscriptions' ? 'monthly' : '');
+
+  const save = (entry: Entry, repeats: Frequency | '') =>
     run(async () => {
       const editing = form !== 'new' && form;
+      // Schedule first: if it fails nothing is saved, so retrying can't add the expense twice.
+      if (repeats && repeats !== schedules[subscriptionKey(entry.description)]?.frequency) await changeSchedule(entry.description, { frequency: repeats });
       const { transaction } = await request(editing ? '/api/transactions/' + editing.id : '/api/transactions', editing ? 'PATCH' : 'POST', entry);
       setEntries(editing ? entries.map((e) => (e.id === editing.id ? transaction : e)) : [transaction, ...entries]);
       setForm(null);
@@ -196,7 +202,7 @@ export default function Dashboard({ initial, initialSchedules, loadError, canSig
 
       {form && (
         <Modal title={form === 'new' ? 'Add expense' : 'Edit expense'} onClose={closeForm}>
-          <ExpenseForm key={form === 'new' ? 'new' : form.id} expense={form === 'new' ? undefined : form}
+          <ExpenseForm key={form === 'new' ? 'new' : form.id} expense={form === 'new' ? undefined : form} repeats={form === 'new' ? '' : repeatsOf(form)}
             banks={banks} busy={busy} error={error} onSubmit={save} onCancel={closeForm} />
         </Modal>
       )}

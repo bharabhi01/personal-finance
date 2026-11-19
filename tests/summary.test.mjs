@@ -60,12 +60,12 @@ test('Subscription frequency sets the next due date and the monthly cost',()=>{
  assert.equal(nextCharge('2026-12-29','weekly'),'2027-01-05');assert.equal(nextCharge('2026-11-30','quarterly'),'2027-02-28');
  assert.equal(nextCharge('2026-08-31','half-yearly'),'2027-02-28');
 });
-test('Subscriptions: paused and cancelled come last; Insurance and Health recur only once given a schedule',()=>{
+test('Subscriptions: paused and cancelled come last; other categories recur only once given a schedule',()=>{
  const rows=[row('2026-11-01',100000,'Subscriptions','Netflix'),row('2026-10-05',50000,'Subscriptions','Spotify'),row('2026-09-10',1200000,'Insurance','Car insurance'),
-  row('2026-11-11',170000,'Health','Gym'),row('2026-11-12',43000,'Health','Pharmacy'),row('2026-11-02',99000,'Subscriptions','Hotstar')];
- const subs=subscriptions(rows,{netflix:{status:'cancelled'},spotify:{status:'paused',frequency:'yearly'},'car insurance':{frequency:'half-yearly'},gym:{frequency:'monthly',status:'active'}});
+  row('2026-11-11',170000,'Health','Gym'),row('2026-11-12',43000,'Health','Pharmacy'),row('2026-11-01',1800000,'Housing','Rent'),row('2026-11-02',99000,'Subscriptions','Hotstar')];
+ const subs=subscriptions(rows,{netflix:{status:'cancelled'},spotify:{status:'paused',frequency:'yearly'},'car insurance':{frequency:'half-yearly'},gym:{frequency:'monthly',status:'active'},rent:{frequency:'monthly'}});
  assert.deepEqual(subs.map(s=>[s.name,s.category,s.frequency,s.status,s.next]),[
-  ['Hotstar','Subscriptions','monthly','active','2026-12-02'],['Gym','Health','monthly','active','2026-12-11'],['Car insurance','Insurance','half-yearly','active','2027-03-10'],
+  ['Rent','Housing','monthly','active','2026-12-01'],['Hotstar','Subscriptions','monthly','active','2026-12-02'],['Gym','Health','monthly','active','2026-12-11'],['Car insurance','Insurance','half-yearly','active','2027-03-10'],
   ['Spotify','Subscriptions','yearly','paused','2027-10-05'],['Netflix','Subscriptions','monthly','cancelled','2026-12-01'],
  ]);
  assert.equal(subs.find(s=>s.name==='Car insurance').monthly_paise,200000);

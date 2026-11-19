@@ -1,10 +1,13 @@
 'use client';
-import { categories } from '@/lib/validation.mjs';
+import { categories, frequencies } from '@/lib/validation.mjs';
 import { todayIST } from '@/lib/format';
 import type { Entry, Transaction } from '@/lib/store';
+import { FREQUENCY_LABEL } from '@/lib/format';
+import type { Frequency } from '@/lib/summary';
 
 export default function ExpenseForm({
   expense,
+  repeats,
   banks,
   busy,
   error,
@@ -12,10 +15,12 @@ export default function ExpenseForm({
   onCancel,
 }: {
   expense?: Transaction;
+  /** The expense's current frequency, or '' when it doesn't repeat. */
+  repeats: Frequency | '';
   banks: string[];
   busy: boolean;
   error: string;
-  onSubmit: (entry: Entry) => void;
+  onSubmit: (entry: Entry, repeats: Frequency | '') => void;
   onCancel: () => void;
 }) {
   function submit(e: React.FormEvent<HTMLFormElement>) {
@@ -29,7 +34,7 @@ export default function ExpenseForm({
       category: String(f.get('category')),
       bank: String(f.get('bank')).trim() || null,
       date: String(f.get('date')),
-    });
+    }, String(f.get('repeats')) as Frequency | '');
   }
 
   return (
@@ -53,6 +58,13 @@ export default function ExpenseForm({
         Bank / account
         <input name="bank" list="banks" maxLength={100} placeholder="Kotak Bank" defaultValue={expense?.bank ?? ''} />
         <datalist id="banks">{banks.map((b) => <option key={b} value={b} />)}</datalist>
+      </label>
+      <label>
+        Repeats
+        <select name="repeats" defaultValue={repeats}>
+          {!repeats && <option value="">Doesn't repeat</option>}
+          {(frequencies as Frequency[]).map((v) => <option key={v} value={v}>{FREQUENCY_LABEL[v]}</option>)}
+        </select>
       </label>
       <label>
         Date

@@ -67,9 +67,9 @@ test('Schedule change: name is trimmed and lower-cased; a known frequency, statu
  assert.deepEqual(validateSchedule({name:'Car insurance',frequency:'half-yearly',status:'active'}),{name:'car insurance',frequency:'half-yearly',status:'active'});
  for(const bad of [{name:'',frequency:'weekly'},{name:'x',frequency:'daily'},{name:'x',status:'stopped'},{name:'x'},{frequency:'monthly'},null])assert.throws(()=>validateSchedule(bad));
 });
-test('Instinct: Subscriptions, Insurance and Health expenses may set a frequency; others may not',()=>{
- const batch=validateInstinctBatch({message_id:'m',expenses:[{amount:399,description:'Bumble Subscription',category:'Subscriptions',frequency:'weekly'},{amount:12000,description:'Car insurance',category:'Insurance',frequency:'half-yearly'},{amount:1700,description:'Gym',category:'Health',frequency:'monthly'},{amount:5,description:'x',category:'Food'}]},'2026-10-24');
- assert.deepEqual(batch.schedules,[{name:'bumble subscription',frequency:'weekly'},{name:'car insurance',frequency:'half-yearly'},{name:'gym',frequency:'monthly'}]);
- assert.throws(()=>validateInstinctBatch({message_id:'m',expenses:[{amount:5,description:'x',category:'Food',frequency:'weekly'}]},'2026-10-24'),/expenses #1: Only a Subscriptions, Insurance, Health expense/);
+test('Instinct: any expense may set a frequency; other kinds may not',()=>{
+ const batch=validateInstinctBatch({message_id:'m',expenses:[{amount:399,description:'Bumble Subscription',category:'Subscriptions',frequency:'weekly'},{amount:12000,description:'Car insurance',category:'Insurance',frequency:'half-yearly'},{amount:1700,description:'Gym',category:'Health',frequency:'monthly'},{amount:18000,description:'Rent',category:'Housing',frequency:'monthly'},{amount:5,description:'x',category:'Food'}]},'2026-10-24');
+ assert.deepEqual(batch.schedules,[{name:'bumble subscription',frequency:'weekly'},{name:'car insurance',frequency:'half-yearly'},{name:'gym',frequency:'monthly'},{name:'rent',frequency:'monthly'}]);
+ assert.throws(()=>validateInstinctBatch({message_id:'m',income:[{amount:5,description:'Salary',frequency:'monthly'}]},'2026-10-24'),/income #1: Only an expense/);
  assert.throws(()=>validateInstinctBatch({message_id:'m',expenses:[{amount:5,description:'x',category:'Subscriptions',frequency:'daily'}]},'2026-10-24'),/expenses #1: Frequency/);
 });
