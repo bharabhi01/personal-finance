@@ -1,4 +1,4 @@
-import {test} from 'node:test';import assert from 'node:assert/strict';import {validateEntry,validateInstinctBatch,sameEntries,validateInstinctChange,instinctView} from '../lib/validation.mjs';
+import {test} from 'node:test';import assert from 'node:assert/strict';import {validateEntry,validateInstinctBatch,sameEntries,validateInstinctChange,instinctView,validateFrequency} from '../lib/validation.mjs';
 const expense={amount_paise:18000,date:'2026-10-13',description:'Dosa',category:'Food'};
 const full=(over={})=>({kind:'expense',to_bank:null,bank:null,...expense,...over});
 test('Valid integer-paise expense (kind defaults to expense)',()=>assert.deepEqual(validateEntry(expense),full()));
@@ -60,4 +60,8 @@ test('Instinct edit: change only the fields sent, keep the kind, validate the re
  assert.equal(validateInstinctChange(transfer,{from_bank:'HDFC Bank'}).bank,'HDFC Bank');
  assert.throws(()=>validateInstinctChange(transfer,{to_bank:'axis bank'}),/different banks/);
  assert.deepEqual(instinctView({...saved,created_at:'t',source:'whatsapp'}),{id:'x',kind:'expense',amount:2300,date:'2026-10-24',description:'Claude Subscription',category:'Subscriptions',bank:'Kotak Bank',to_bank:null,created_at:'t'});
+});
+test('Subscription frequency: name is trimmed and lower-cased, frequency must be known',()=>{
+ assert.deepEqual(validateFrequency({name:'  Bumble Subscription ',frequency:'weekly'}),{name:'bumble subscription',frequency:'weekly'});
+ for(const bad of [{name:'',frequency:'weekly'},{name:'x',frequency:'daily'},{frequency:'monthly'},null])assert.throws(()=>validateFrequency(bad));
 });

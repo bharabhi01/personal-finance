@@ -1,5 +1,5 @@
 import {test} from 'node:test';import assert from 'node:assert/strict';
-import {periodRange,monthOptions,latestMonth,filterRows,summarize,categoryTotals,dailySeries,subscriptions,addMonth,moneyFlow,accountBalances,creditCardSpend} from '../lib/summary.ts';
+import {periodRange,monthOptions,latestMonth,filterRows,summarize,categoryTotals,dailySeries,subscriptions,addMonth,nextCharge,moneyFlow,accountBalances,creditCardSpend} from '../lib/summary.ts';
 const today='2026-10-24';
 const row=(date,amount_paise,category='Food',description='x',bank=null)=>({date,amount_paise,category,description,bank});
 test('Period ranges: month, last N calendar months, all time',()=>{
@@ -48,6 +48,16 @@ test('Subscriptions: latest charge per name, next due a month later',()=>{
  const subs=subscriptions(rows);
  assert.deepEqual(subs.map(s=>[s.name.trim(),s.amount_paise,s.next]),[['claude subscription',230000,'2026-11-03'],['Netflix',64900,'2026-11-08']]);
  assert.equal(addMonth('2026-01-31'),'2026-02-28');assert.equal(addMonth('2026-12-15'),'2027-01-15');
+ assert.deepEqual(subs.map(s=>[s.frequency,s.monthly_paise]),[['monthly',230000],['monthly',64900]]);
+});
+test('Subscription frequency sets the next due date and the monthly cost',()=>{
+ const rows=[row('2026-11-13',39900,'Subscriptions','Bumble'),row('2026-10-03',230000,'Subscriptions','Claude'),row('2026-01-31',120000,'Subscriptions','Prime'),row('2026-09-15',300000,'Subscriptions','Insurance app')];
+ const subs=subscriptions(rows,{bumble:'weekly',prime:'yearly','insurance app':'quarterly'});
+ assert.deepEqual(subs.map(s=>[s.name,s.frequency,s.next,s.monthly_paise]),[
+  ['Claude','monthly','2026-11-03',230000],['Bumble','weekly','2026-11-20',Math.round(39900*52/12)],
+  ['Insurance app','quarterly','2026-12-15',100000],['Prime','yearly','2027-01-31',10000],
+ ]);
+ assert.equal(nextCharge('2026-12-29','weekly'),'2027-01-05');assert.equal(nextCharge('2026-11-30','quarterly'),'2027-02-28');
 });
 
 const led=(kind,date,rupees,bank=null,to_bank=null,created_at=date+'T12:00:00.000Z',description='x')=>({kind,date,amount_paise:rupees*100,category:null,description,bank,to_bank,created_at});

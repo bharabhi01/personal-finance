@@ -2,8 +2,8 @@
 import { useMemo, useState } from 'react';
 import { categories } from '@/lib/validation.mjs';
 import { money, todayIST } from '@/lib/format';
-import { accountBalances, categoryTotals, creditCardSpend, dailySeries, filterRows, latestMonth, monthOptions, moneyFlow, periodRange, subscriptions, summarize } from '@/lib/summary';
-import type { Entry, Transaction } from '@/lib/store';
+import { accountBalances, categoryTotals, creditCardSpend, dailySeries, filterRows, latestMonth, monthOptions, moneyFlow, periodRange, subscriptionKey, subscriptions, summarize, type Frequency } from '@/lib/summary';
+import type { Entry, Frequencies, Transaction } from '@/lib/store';
 import Activity from '@/components/Activity';
 import Balances from '@/components/Balances';
 import Mosaic from '@/components/Mosaic';
@@ -22,16 +22,17 @@ const RANGES = [
   { value: 'all', label: 'All time' },
 ];
 
-async function request(url: string, method: string, body?: Entry) {
+async function request(url: string, method: string, body?: object) {
   const res = await fetch(url, { method, headers: { 'Content-Type': 'application/json' }, body: body && JSON.stringify(body) });
   const result = await res.json();
   if (!res.ok) throw new Error(result.error);
   return result;
 }
 
-export default function Dashboard({ initial, loadError, canSignOut }: { initial: Transaction[]; loadError?: string; canSignOut: boolean }) {
+export default function Dashboard({ initial, initialFrequencies, loadError, canSignOut }: { initial: Transaction[]; initialFrequencies: Frequencies; loadError?: string; canSignOut: boolean }) {
   const today = todayIST();
   const [entries, setEntries] = useState(initial);
+  const [frequencies, setFrequencies] = useState(initialFrequencies);
   const [period, setPeriod] = useState(() => latestMonth(initial, today));
   const [category, setCategory] = useState('All');
   const [form, setForm] = useState<Transaction | 'new' | null>(null);
@@ -58,7 +59,7 @@ export default function Dashboard({ initial, loadError, canSignOut }: { initial:
   const stats = summarize(rows);
   const totals = categoryTotals(rows);
   const daily = useMemo(() => dailySeries(rows, range, today), [rows, range, today]);
-  const subs = useMemo(() => subscriptions(expenses), [expenses]);
+  const subs = useMemo(() => subscriptions(expenses, frequencies), [expenses, frequencies]);
   const banks = useMemo(() => [...new Set(entries.flatMap((e) => [e.bank, e.to_bank].filter((b): b is string => !!b)))].sort(), [entries]);
 
   async function run(action: () => Promise<void>) {
@@ -86,6 +87,11 @@ export default function Dashboard({ initial, loadError, canSignOut }: { initial:
       setEntries(entries.filter((e) => e.id !== target.id));
       setDeleting(null);
     });
+
+  async function changeFrequency(name: string, frequency: Frequency) {
+    await request('/api/subscriptions', 'PUT', { name, frequency });
+    setFrequencies((current) => ({ ...current, [subscriptionKey(name)]: frequency }));
+  }
 
   async function signOut() {
     await fetch('/api/logout', { method: 'POST' });
@@ -183,7 +189,7 @@ export default function Dashboard({ initial, loadError, canSignOut }: { initial:
       <div className="grid two">
         <RecentExpenses rows={rows} onEdit={openForm} onDelete={(e) => { setError(''); setDeleting(e); }} onExport={exportCsv} />
         <div className="stack">
-          <Subscriptions items={subs} />
+          <Subscriptions items={subs} onFrequency={changeFrequency} />
           <Activity rows={activity} savings={flow.savings} onDelete={(t) => { setError(''); setDeleting(t); }} />
         </div>
       </div>

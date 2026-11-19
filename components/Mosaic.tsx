@@ -4,7 +4,7 @@ import { Arc, Waves } from '@/components/Art';
 import MoneyFlow from '@/components/MoneyFlow';
 
 export default function Mosaic({ flow, stats, subs }: { flow: ReturnType<typeof moneyFlow>; stats: ReturnType<typeof summarize>; subs: Subscription[] }) {
-  const monthly = subs.reduce((sum, s) => sum + s.amount_paise, 0);
+  const monthly = subs.reduce((sum, s) => sum + s.monthly_paise, 0);
   return (
     <div className="mosaic">
       <MoneyFlow flow={flow} />

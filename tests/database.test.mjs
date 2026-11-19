@@ -7,7 +7,7 @@ const migrate=file=>db.exec(fs.readFileSync(new URL('../supabase/'+file,import.m
 await migrate('001_expenses.sql');await migrate('002_bank_and_subscriptions.sql');
 // An expense saved before 003 must survive it.
 await db.exec(`insert into auth.users values('${owner}'),('${other}');insert into public.expenses(user_id,amount_paise,date,description,category,bank,source) values('${owner}',99900,'2026-09-01','Old expense','Food','Kotak Bank','app')`);
-await migrate('003_transactions.sql');await migrate('004_categories.sql');await migrate('005_more_categories.sql');
+await migrate('003_transactions.sql');await migrate('004_categories.sql');await migrate('005_more_categories.sql');await migrate('006_subscription_frequencies.sql');
 const old=(await db.query("select kind,category,to_bank,amount_paise::int as amount from public.transactions")).rows;
 if(old.length!==1||old[0].kind!=='expense'||old[0].category!=='Food'||old[0].to_bank!==null||old[0].amount!==99900)throw Error('existing expense not migrated');console.log('PASS existing expenses become kind=expense in transactions');
 await db.exec(`set role authenticated;set request.jwt.claim.sub='${owner}';`);
@@ -31,8 +31,14 @@ await add(owner,{category:'Food',bank:'UPI',source:'whatsapp',message:'msg-1',li
 await mustFail('same message line cannot be saved twice',()=>add(owner,{category:'Food',source:'whatsapp',message:'msg-1',line:1}));
 await mustFail('whatsapp row needs a message ID',()=>add(owner,{category:'Food',source:'whatsapp'}));
 await mustFail('import function and table are gone',()=>db.query("select public.import_expenses('m','[]'::jsonb)"));await mustFail('expenses table was renamed',()=>db.query('select * from public.expenses'));
+const freq=(user,name,frequency)=>db.query('insert into public.subscription_frequencies(user_id,name,frequency) values($1,$2,$3) on conflict(user_id,name) do update set frequency=excluded.frequency',[user,name,frequency]);
+await freq(owner,'bumble','weekly');await freq(owner,'bumble','monthly');
+if((await db.query('select frequency from public.subscription_frequencies')).rows[0].frequency!=='monthly')throw Error('frequency upsert');console.log('PASS subscription frequency saves and updates');
+await mustFail('unknown frequency rejected',()=>freq(owner,'netflix','daily'));await mustFail('frequency name must be trimmed and lower-case',()=>freq(owner,'Netflix ','weekly'));
 await db.exec(`set request.jwt.claim.sub='${other}'`);
 if((await db.query('select * from public.transactions')).rows.length)throw Error('owner ledger leaked');console.log('PASS other user cannot read the owner ledger');
+if((await db.query('select * from public.subscription_frequencies')).rows.length)throw Error('owner frequencies leaked');console.log('PASS other user cannot read the owner frequencies');
+await mustFail('cannot set a frequency for another user',()=>freq(owner,'spotify','yearly'));
 await mustFail('cannot insert a row for another user',()=>add(owner,{category:'Food'}));
 await db.exec(`set request.jwt.claim.sub='${owner}'`);
 const before=(await db.query('select count(*)::int as n from public.transactions')).rows[0].n;

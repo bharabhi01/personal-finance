@@ -189,3 +189,4 @@ select{appearance:none;padding-right:38px;background-image:var(--chevron);backgr
 
 .savings-line{display:flex;flex-wrap:wrap;align-items:center;gap:4px 10px;margin:0 0 12px}
 .savings-line .tag{margin:0}
+.subs select.frequency{width:auto;padding:6px 32px 6px 12px;font-size:13px;border-radius:999px;background-position:right 12px center}
