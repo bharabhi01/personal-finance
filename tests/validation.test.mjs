@@ -5,7 +5,7 @@ test('Valid integer-paise expense (kind defaults to expense)',()=>assert.deepEqu
 test('Reject invalid amounts',()=>{for(const amount_paise of [0,-1,1.5,NaN,100000001,'180'])assert.throws(()=>validateEntry({...expense,amount_paise}));});
 test('Reject impossible dates',()=>{for(const date of ['2026-02-30','2026-13-01','yesterday','2026-1-1'])assert.throws(()=>validateEntry({...expense,date}));});
 test('Every category the user listed is accepted',()=>{
- for(const category of ['Housing','Bills','Food','Groceries','Shopping','Subscriptions','Travel','Health'])assert.equal(validateEntry({...expense,category}).category,category);
+ for(const category of ['Housing','Bills','Food','Groceries','Shopping','Subscriptions','Travel','Health','EMI','Insurance','Family'])assert.equal(validateEntry({...expense,category}).category,category);
 });
 test('Trim text, accept Subscriptions, reject unknown category or kind',()=>{
  assert.equal(validateEntry({...expense,description:' Dosa '}).description,'Dosa');

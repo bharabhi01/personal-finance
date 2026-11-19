@@ -26,6 +26,9 @@ const CATEGORY_COLORS: Record<string, string> = {
   Bills: '#9a85c9',
   Health: '#6fae6a',
   Subscriptions: '#3f7d5a',
+  EMI: '#c9a227',
+  Insurance: '#4f8fa8',
+  Family: '#e07a5f',
   Other: '#a8a89e',
 };
 export const categoryColor = (name: string) => CATEGORY_COLORS[name] ?? CATEGORY_COLORS.Other;
