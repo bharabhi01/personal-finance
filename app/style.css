@@ -156,6 +156,8 @@ select{appearance:none;padding-right:38px;background-image:var(--chevron);backgr
 .meta .tag{margin:0}
 .amount.positive{color:var(--income-ink)}
 .stack{display:grid;gap:20px;align-content:start;min-width:0}
+.card.recent{display:flex;flex-direction:column}
+.expenses.fit{position:relative;flex:1 1 0;min-height:520px;overflow:hidden}
 .more{margin-top:12px;text-align:center}
 
 /* modal + form */
