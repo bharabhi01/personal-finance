@@ -1,10 +1,14 @@
+import { recurringCategories } from './validation.mjs';
+
 /** The fields expense summaries read. */
 export type Row = { date: string; amount_paise: number; category: string | null; description: string; bank: string | null };
 /** A full ledger row, needed for money flow and balances. */
 export type LedgerRow = Row & { kind: string; to_bank: string | null; created_at: string };
 export type Range = { from: string | null; to: string | null };
-export type Frequency = 'weekly' | 'monthly' | 'quarterly' | 'yearly';
-export type Subscription = { name: string; amount_paise: number; bank: string | null; last: string; next: string; frequency: Frequency; monthly_paise: number };
+export type Frequency = 'weekly' | 'monthly' | 'quarterly' | 'half-yearly' | 'yearly';
+export type Status = 'active' | 'paused' | 'cancelled';
+export type Schedule = { frequency: Frequency; status: Status };
+export type Subscription = { name: string; category: string; amount_paise: number; bank: string | null; last: string; next: string; frequency: Frequency; status: Status; monthly_paise: number };
 
 const DAY = 86400000;
 const MAX_DAYS = 366;
@@ -95,34 +99,39 @@ export function addMonth(date: string, months = 1) {
   return iso(new Date(Date.UTC(y, m - 1 + months, Math.min(d, lastDay))));
 }
 
-const MONTHS: Record<Frequency, number> = { weekly: 12 / 52, monthly: 1, quarterly: 3, yearly: 12 };
+const MONTHS: Record<Frequency, number> = { weekly: 12 / 52, monthly: 1, quarterly: 3, 'half-yearly': 6, yearly: 12 };
+const STATUS_ORDER: Record<Status, number> = { active: 0, paused: 1, cancelled: 2 };
 
 /** When a subscription charged on `date` is next due. */
 export function nextCharge(date: string, frequency: Frequency) {
   return frequency === 'weekly' ? iso(new Date(parse(date).getTime() + 7 * DAY)) : addMonth(date, MONTHS[frequency]);
 }
 
-/** A subscription's name as stored with its frequency: trimmed and lower-cased. */
+/** A subscription's name as stored with its schedule: trimmed and lower-cased. */
 export const subscriptionKey = (name: string) => name.trim().toLowerCase();
 
 /**
- * Each distinct 'Subscriptions' expense by its latest charge, soonest due first. The frequency comes from
- * `frequencies` (keyed by subscriptionKey) and defaults to monthly; monthly_paise is the cost per month.
+ * Each distinct recurring expense by its latest charge: every Subscriptions expense, plus Insurance and Health
+ * expenses that have a schedule. The schedule (keyed by subscriptionKey) defaults to monthly and active;
+ * monthly_paise is the cost per month. Active ones come first, soonest due first, then paused, then cancelled.
  */
-export function subscriptions(rows: Row[], frequencies: Record<string, Frequency> = {}): Subscription[] {
+export function subscriptions(rows: Row[], schedules: Record<string, Partial<Schedule>> = {}): Subscription[] {
   const latest = new Map<string, Row>();
   for (const r of rows) {
-    if (r.category !== 'Subscriptions') continue;
     const key = subscriptionKey(r.description);
+    if (r.category !== 'Subscriptions' && !(recurringCategories.includes(r.category ?? '') && schedules[key])) continue;
     const current = latest.get(key);
     if (!current || r.date > current.date) latest.set(key, r);
   }
   return [...latest]
     .map(([key, r]) => {
-      const frequency = frequencies[key] ?? 'monthly';
-      return { name: r.description, amount_paise: r.amount_paise, bank: r.bank, last: r.date, next: nextCharge(r.date, frequency), frequency, monthly_paise: Math.round(r.amount_paise / MONTHS[frequency]) };
+      const frequency = schedules[key]?.frequency ?? 'monthly', status = schedules[key]?.status ?? 'active';
+      return {
+        name: r.description, category: r.category!, amount_paise: r.amount_paise, bank: r.bank, last: r.date,
+        next: nextCharge(r.date, frequency), frequency, status, monthly_paise: Math.round(r.amount_paise / MONTHS[frequency]),
+      };
     })
-    .sort((a, b) => a.next.localeCompare(b.next));
+    .sort((a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status] || a.next.localeCompare(b.next));
 }
 
 /**

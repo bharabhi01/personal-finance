@@ -52,12 +52,23 @@ test('Subscriptions: latest charge per name, next due a month later',()=>{
 });
 test('Subscription frequency sets the next due date and the monthly cost',()=>{
  const rows=[row('2026-11-13',39900,'Subscriptions','Bumble'),row('2026-10-03',230000,'Subscriptions','Claude'),row('2026-01-31',120000,'Subscriptions','Prime'),row('2026-09-15',300000,'Subscriptions','Insurance app')];
- const subs=subscriptions(rows,{bumble:'weekly',prime:'yearly','insurance app':'quarterly'});
+ const subs=subscriptions(rows,{bumble:{frequency:'weekly'},prime:{frequency:'yearly'},'insurance app':{frequency:'quarterly'}});
  assert.deepEqual(subs.map(s=>[s.name,s.frequency,s.next,s.monthly_paise]),[
   ['Claude','monthly','2026-11-03',230000],['Bumble','weekly','2026-11-20',Math.round(39900*52/12)],
   ['Insurance app','quarterly','2026-12-15',100000],['Prime','yearly','2027-01-31',10000],
  ]);
  assert.equal(nextCharge('2026-12-29','weekly'),'2027-01-05');assert.equal(nextCharge('2026-11-30','quarterly'),'2027-02-28');
+ assert.equal(nextCharge('2026-08-31','half-yearly'),'2027-02-28');
+});
+test('Subscriptions: paused and cancelled come last; Insurance and Health recur only once given a schedule',()=>{
+ const rows=[row('2026-11-01',100000,'Subscriptions','Netflix'),row('2026-10-05',50000,'Subscriptions','Spotify'),row('2026-09-10',1200000,'Insurance','Car insurance'),
+  row('2026-11-11',170000,'Health','Gym'),row('2026-11-12',43000,'Health','Pharmacy'),row('2026-11-02',99000,'Subscriptions','Hotstar')];
+ const subs=subscriptions(rows,{netflix:{status:'cancelled'},spotify:{status:'paused',frequency:'yearly'},'car insurance':{frequency:'half-yearly'},gym:{frequency:'monthly',status:'active'}});
+ assert.deepEqual(subs.map(s=>[s.name,s.category,s.frequency,s.status,s.next]),[
+  ['Hotstar','Subscriptions','monthly','active','2026-12-02'],['Gym','Health','monthly','active','2026-12-11'],['Car insurance','Insurance','half-yearly','active','2027-03-10'],
+  ['Spotify','Subscriptions','yearly','paused','2027-10-05'],['Netflix','Subscriptions','monthly','cancelled','2026-12-01'],
+ ]);
+ assert.equal(subs.find(s=>s.name==='Car insurance').monthly_paise,200000);
 });
 
 const led=(kind,date,rupees,bank=null,to_bank=null,created_at=date+'T12:00:00.000Z',description='x')=>({kind,date,amount_paise:rupees*100,category:null,description,bank,to_bank,created_at});

@@ -4,7 +4,8 @@ import { Arc, Waves } from '@/components/Art';
 import MoneyFlow from '@/components/MoneyFlow';
 
 export default function Mosaic({ flow, stats, subs }: { flow: ReturnType<typeof moneyFlow>; stats: ReturnType<typeof summarize>; subs: Subscription[] }) {
-  const monthly = subs.reduce((sum, s) => sum + s.monthly_paise, 0);
+  const active = subs.filter((s) => s.status === 'active');
+  const monthly = active.reduce((sum, s) => sum + s.monthly_paise, 0);
   return (
     <div className="mosaic">
       <MoneyFlow flow={flow} />
@@ -27,7 +28,7 @@ export default function Mosaic({ flow, stats, subs }: { flow: ReturnType<typeof 
       <section className="tile tile-moss">
         <span className="label">Subscriptions</span>
         <strong className="big">{money(monthly)}</strong>
-        <span className="sub">per month · {subs.length} active</span>
+        <span className="sub">per month · {active.length} active</span>
       </section>
     </div>
   );

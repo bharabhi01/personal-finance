@@ -4,15 +4,15 @@ import {createClient,type SupabaseClient} from '@supabase/supabase-js';
 import {db,isDev} from '@/lib/server';
 import {todayIST} from '@/lib/format';
 import {sameEntries} from '@/lib/validation.mjs';
-import type {Frequency} from '@/lib/summary';
+import type {Schedule} from '@/lib/summary';
 
 export type Kind = 'expense'|'income'|'investment'|'savings'|'balance';
 /** One ledger row as validated input. `bank` is the account money leaves from (or the account a balance belongs to); `to_bank` is a savings transfer's destination. */
 export type Entry = {kind:Kind; amount_paise:number; date:string; description:string; category:string|null; bank:string|null; to_bank:string|null};
 export type Transaction = Entry & {id:string; source:string; created_at:string};
 export type SaveResult = {status:'saved'|'already_saved'; entries:Transaction[]};
-/** Subscription frequencies by subscriptionKey (trimmed, lower-cased name). */
-export type Frequencies = Record<string,Frequency>;
+/** Subscription schedules by subscriptionKey (trimmed, lower-cased name). */
+export type Schedules = Record<string,Schedule>;
 export type Store = {
  list():Promise<Transaction[]>;
  get(id:string):Promise<Transaction>;
@@ -22,8 +22,9 @@ export type Store = {
  remove(id:string):Promise<void>;
  /** Saves a batch from Instinct once per message ID: an identical retry changes nothing. */
  saveFromMessage(messageId:string,entries:Entry[]):Promise<SaveResult>;
- frequencies():Promise<Frequencies>;
- setFrequency(name:string,frequency:Frequency):Promise<void>;
+ schedules():Promise<Schedules>;
+ /** Saves the fields given (a new schedule starts monthly and active) and returns the stored schedule. */
+ setSchedule(name:string,change:Partial<Schedule>):Promise<Schedule>;
 };
 
 /** The ledger for the signed-in browser session, or null when signed out. Development needs no sign-in. */
@@ -81,14 +82,15 @@ function supabaseStore(client:SupabaseClient,userId:string):Store {
    if (error) throw new Error('Could not save. Nothing is confirmed saved.');
    return {status:'saved',entries:data};
   },
-  async frequencies() {
-   const {data,error}=await client.from('subscription_frequencies').select('name,frequency').eq('user_id',userId);
-   if (error) throw new Error('Subscription frequencies could not be loaded.');
-   return Object.fromEntries(data.map(r=>[r.name,r.frequency]));
+  async schedules() {
+   const {data,error}=await client.from('subscription_schedules').select('name,frequency,status').eq('user_id',userId);
+   if (error) throw new Error('Subscription schedules could not be loaded.');
+   return Object.fromEntries(data.map(({name,...schedule})=>[name,schedule]));
   },
-  async setFrequency(name,frequency) {
-   const {error}=await client.from('subscription_frequencies').upsert({user_id:userId,name,frequency});
-   if (error) throw new Error('Could not save the frequency.');
+  async setSchedule(name,change) {
+   const {data,error}=await client.from('subscription_schedules').upsert({user_id:userId,name,...change}).select('frequency,status').single();
+   if (error || !data) throw new Error('Could not save the schedule.');
+   return data;
   },
  };
 }
@@ -99,7 +101,7 @@ function alreadySaved(saved:Transaction[],entries:Entry[]):SaveResult {
 }
 
 // Development only: a local file stands in for the database, seeded with sample data on first run.
-const DEV_FILE='.dev-data.json', DEV_FREQUENCIES='.dev-frequencies.json';
+const DEV_FILE='.dev-data.json', DEV_SCHEDULES='.dev-schedules.json';
 type DevRow = Transaction & {source_message_id?:string; source_line?:number};
 
 const SAMPLE_EXPENSES:[number,string,string,number,string][]=[
@@ -172,10 +174,12 @@ const fileStore:Store = {
   await writeDev([...rows,...created]);
   return {status:'saved',entries:created};
  },
- async frequencies() {
-  try { return JSON.parse(await readFile(DEV_FREQUENCIES,'utf8')); } catch { return {}; }
+ async schedules() {
+  try { return JSON.parse(await readFile(DEV_SCHEDULES,'utf8')); } catch { return {}; }
  },
- async setFrequency(name,frequency) {
-  await writeFile(DEV_FREQUENCIES,JSON.stringify({...await fileStore.frequencies(),[name]:frequency},null,1));
+ async setSchedule(name,change) {
+  const all=await fileStore.schedules(), schedule:Schedule={...{frequency:'monthly',status:'active'} as Schedule,...all[name],...change};
+  await writeFile(DEV_SCHEDULES,JSON.stringify({...all,[name]:schedule},null,1));
+  return schedule;
  },
 };

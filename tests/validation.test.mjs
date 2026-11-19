@@ -1,4 +1,4 @@
-import {test} from 'node:test';import assert from 'node:assert/strict';import {validateEntry,validateInstinctBatch,sameEntries,validateInstinctChange,instinctView,validateFrequency} from '../lib/validation.mjs';
+import {test} from 'node:test';import assert from 'node:assert/strict';import {validateEntry,validateInstinctBatch,sameEntries,validateInstinctChange,instinctView,validateSchedule} from '../lib/validation.mjs';
 const expense={amount_paise:18000,date:'2026-10-13',description:'Dosa',category:'Food'};
 const full=(over={})=>({kind:'expense',to_bank:null,bank:null,...expense,...over});
 test('Valid integer-paise expense (kind defaults to expense)',()=>assert.deepEqual(validateEntry(expense),full()));
@@ -27,7 +27,7 @@ test('Savings move between two different banks; balances need a bank and may be 
 });
 test('Instinct message: "Claude Subscription Rs 2300 Kotak Bank"',()=>{
  const batch=validateInstinctBatch({message_id:'wamid.1',expenses:[{amount:2300,description:'Claude Subscription',category:'Subscriptions',bank:'Kotak Bank'}]},'2026-10-24');
- assert.deepEqual(batch,{message_id:'wamid.1',entries:[{kind:'expense',amount_paise:230000,date:'2026-10-24',description:'Claude Subscription',category:'Subscriptions',bank:'Kotak Bank',to_bank:null}],frequencies:[]});
+ assert.deepEqual(batch,{message_id:'wamid.1',entries:[{kind:'expense',amount_paise:230000,date:'2026-10-24',description:'Claude Subscription',category:'Subscriptions',bank:'Kotak Bank',to_bank:null}],schedules:[]});
 });
 test('Instinct mixed message keeps list order: expenses, income, investments, savings, balances',()=>{
  const {entries}=validateInstinctBatch({message_id:'m',balances:[{bank:'Kotak Bank',amount:85000}],savings:[{amount:30000,from_bank:'Axis Bank',to_bank:'Kotak Bank'}],investments:[{amount:20000,description:'SIP 1'}],income:[{amount:150000,description:'Salary',bank:'Kotak Bank'}],expenses:[{amount:180,description:'Dosa',category:'Food'}]},'2026-10-24');
@@ -61,13 +61,15 @@ test('Instinct edit: change only the fields sent, keep the kind, validate the re
  assert.throws(()=>validateInstinctChange(transfer,{to_bank:'axis bank'}),/different banks/);
  assert.deepEqual(instinctView({...saved,created_at:'t',source:'whatsapp'}),{id:'x',kind:'expense',amount:2300,date:'2026-10-24',description:'Claude Subscription',category:'Subscriptions',bank:'Kotak Bank',to_bank:null,created_at:'t'});
 });
-test('Subscription frequency: name is trimmed and lower-cased, frequency must be known',()=>{
- assert.deepEqual(validateFrequency({name:'  Bumble Subscription ',frequency:'weekly'}),{name:'bumble subscription',frequency:'weekly'});
- for(const bad of [{name:'',frequency:'weekly'},{name:'x',frequency:'daily'},{frequency:'monthly'},null])assert.throws(()=>validateFrequency(bad));
+test('Schedule change: name is trimmed and lower-cased; a known frequency, status or both',()=>{
+ assert.deepEqual(validateSchedule({name:'  Bumble Subscription ',frequency:'weekly'}),{name:'bumble subscription',frequency:'weekly'});
+ assert.deepEqual(validateSchedule({name:'Netflix',status:'cancelled'}),{name:'netflix',status:'cancelled'});
+ assert.deepEqual(validateSchedule({name:'Car insurance',frequency:'half-yearly',status:'active'}),{name:'car insurance',frequency:'half-yearly',status:'active'});
+ for(const bad of [{name:'',frequency:'weekly'},{name:'x',frequency:'daily'},{name:'x',status:'stopped'},{name:'x'},{frequency:'monthly'},null])assert.throws(()=>validateSchedule(bad));
 });
-test('Instinct: a Subscriptions expense may set its frequency; other expenses may not',()=>{
- const batch=validateInstinctBatch({message_id:'m',expenses:[{amount:399,description:'Bumble Subscription',category:'Subscriptions',frequency:'weekly'},{amount:5,description:'x',category:'Food'}]},'2026-10-24');
- assert.deepEqual(batch.frequencies,[{name:'bumble subscription',frequency:'weekly'}]);
- assert.throws(()=>validateInstinctBatch({message_id:'m',expenses:[{amount:5,description:'x',category:'Food',frequency:'weekly'}]},'2026-10-24'),/expenses #1: Only a Subscriptions/);
+test('Instinct: Subscriptions, Insurance and Health expenses may set a frequency; others may not',()=>{
+ const batch=validateInstinctBatch({message_id:'m',expenses:[{amount:399,description:'Bumble Subscription',category:'Subscriptions',frequency:'weekly'},{amount:12000,description:'Car insurance',category:'Insurance',frequency:'half-yearly'},{amount:1700,description:'Gym',category:'Health',frequency:'monthly'},{amount:5,description:'x',category:'Food'}]},'2026-10-24');
+ assert.deepEqual(batch.schedules,[{name:'bumble subscription',frequency:'weekly'},{name:'car insurance',frequency:'half-yearly'},{name:'gym',frequency:'monthly'}]);
+ assert.throws(()=>validateInstinctBatch({message_id:'m',expenses:[{amount:5,description:'x',category:'Food',frequency:'weekly'}]},'2026-10-24'),/expenses #1: Only a Subscriptions, Insurance, Health expense/);
  assert.throws(()=>validateInstinctBatch({message_id:'m',expenses:[{amount:5,description:'x',category:'Subscriptions',frequency:'daily'}]},'2026-10-24'),/expenses #1: Frequency/);
 });

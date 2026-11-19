@@ -10,7 +10,7 @@ export async function POST(req:Request){
  try{
   const input=validateInstinctBatch(await req.json(),todayIST());
   const store=getOwnerStore(), result=await store.saveFromMessage(input.message_id,input.entries);
-  for (const {name,frequency} of input.frequencies) await store.setFrequency(name,frequency);
+  for (const {name,...change} of input.schedules) await store.setSchedule(name,change);
   return Response.json(result,{status:result.status==='saved'?201:200});
  }catch(e){return Response.json({error:e instanceof Error?e.message:'Invalid request.'},{status:400});}
 }
